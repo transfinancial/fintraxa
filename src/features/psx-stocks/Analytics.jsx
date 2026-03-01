@@ -250,16 +250,16 @@ export default function PSXAnalytics() {
           {/* ── Stat Cards ── */}
           {isMobile ? (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-              <Card sx={{ mb: 2.5, overflow: 'hidden' }}>
+              <Card sx={{ mb: 1.5, overflow: 'hidden' }}>
                 <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
                     {statCards.map((s, i) => {
                       const Icon = s.icon;
                       return (
                         <Box key={i} sx={{
-                          p: 2,
-                          borderRight: i % 2 === 0 ? `1px solid ${isDark ? '#1c1c1c' : '#f0f0f0'}` : 'none',
-                          borderBottom: i < 2 ? `1px solid ${isDark ? '#1c1c1c' : '#f0f0f0'}` : 'none',
+                          px: 1.75, py: 1.5,
+                          borderRight: i % 2 === 0 ? `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0f0f0'}` : 'none',
+                          borderBottom: i < 2 ? `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0f0f0'}` : 'none',
                           ...(s.highlight && { bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }),
                         }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>

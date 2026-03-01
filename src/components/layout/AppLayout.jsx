@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, IconButton, Avatar, useMediaQuery, useTheme, Tooltip,
@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useAppStore } from '../../store/appStore';
 import FintraxaLogo from '../FintraxaLogo';
 import ProfilePanel from '../ProfilePanel';
+import PullToRefresh from '../PullToRefresh';
 
 /* ─── Section Definitions ─── */
 const sections = [
@@ -95,6 +96,12 @@ export default function AppLayout() {
   const fetchExchangeRates = useAppStore((s) => s.fetchExchangeRates);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  /* Pull-to-refresh handler — reloads current page data */
+  const handlePullRefresh = useCallback(async () => {
+    await new Promise((r) => setTimeout(r, 600));
+    window.location.reload();
+  }, []);
 
   /* Load user prefs & exchange rates on mount */
   useEffect(() => {
@@ -432,47 +439,58 @@ export default function AppLayout() {
       }}>
         <Box sx={{
           flex: 1,
-          px: { xs: 1.25, sm: 2, md: 3 },
-          pt: { xs: 1.25, md: 3 },
-          pb: isMobile ? 'calc(64px + env(safe-area-inset-bottom, 0px) + 12px)' : 3,
+          px: { xs: 1, sm: 1.5, md: 3 },
+          pt: { xs: 1, md: 3 },
+          pb: isMobile ? 'calc(60px + env(safe-area-inset-bottom, 0px) + 8px)' : 3,
           maxWidth: 1000, width: '100%', mx: 'auto',
         }}>
-          <Outlet />
+          {isMobile ? (
+            <PullToRefresh onRefresh={handlePullRefresh}>
+              <Outlet />
+            </PullToRefresh>
+          ) : (
+            <Outlet />
+          )}
         </Box>
       </Box>
 
       {/* ─── Mobile Bottom Nav ─── */}
       {isMobile && (
-        <BottomNavigation
-          value={currentTab}
-          onChange={(_, v) => navigate(sections[v].basePath)}
-          showLabels
-          sx={{
-            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200,
-            bgcolor: isDark ? 'rgba(0,0,0,0.88)' : 'rgba(255,255,255,0.88)',
-            backdropFilter: 'blur(32px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-            border: 'none',
-            borderTop: `0.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'}`,
-            pb: 'calc(env(safe-area-inset-bottom, 0px) + 2px)',
-            height: 'calc(56px + env(safe-area-inset-bottom, 0px) + 2px)',
-            '& .MuiBottomNavigationAction-root': {
-              minWidth: 0, gap: 0.2, py: 0.75, bgcolor: 'transparent',
-              color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)',
-              transition: 'color 0.2s ease',
-              '&.Mui-selected': { color: isDark ? '#fff' : '#000' },
-              '& .MuiSvgIcon-root': { fontSize: 22 },
-            },
-            '& .MuiBottomNavigationAction-label': {
-              fontSize: '0.56rem', fontWeight: 600, letterSpacing: '0.02em',
-              '&.Mui-selected': { fontSize: '0.56rem', fontWeight: 700 },
-            },
-          }}
-        >
-          {sections.map((s) => (
-            <BottomNavigationAction key={s.id} label={s.label} icon={s.icon} />
-          ))}
-        </BottomNavigation>
+        <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200 }}>
+          <BottomNavigation
+            value={currentTab}
+            onChange={(_, v) => navigate(sections[v].basePath)}
+            showLabels
+            sx={{
+              bgcolor: isDark ? 'rgba(0,0,0,0.92)' : 'rgba(255,255,255,0.92)',
+              backdropFilter: 'blur(32px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+              border: 'none',
+              borderTop: `0.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              height: 54,
+              '& .MuiBottomNavigationAction-root': {
+                minWidth: 0, gap: 0.15, py: 0.5, bgcolor: 'transparent',
+                color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)',
+                transition: 'color 0.2s ease',
+                '&.Mui-selected': { color: isDark ? '#fff' : '#000' },
+                '& .MuiSvgIcon-root': { fontSize: 21 },
+              },
+              '& .MuiBottomNavigationAction-label': {
+                fontSize: '0.54rem', fontWeight: 600, letterSpacing: '0.02em',
+                '&.Mui-selected': { fontSize: '0.54rem', fontWeight: 700 },
+              },
+            }}
+          >
+            {sections.map((s) => (
+              <BottomNavigationAction key={s.id} label={s.label} icon={s.icon} />
+            ))}
+          </BottomNavigation>
+          {/* Safe area spacer below nav — matches bg for both themes */}
+          <Box sx={{
+            height: 'env(safe-area-inset-bottom, 0px)',
+            bgcolor: isDark ? '#000' : '#fff',
+          }} />
+        </Box>
       )}
 
       {/* ─── Profile Panel ─── */}

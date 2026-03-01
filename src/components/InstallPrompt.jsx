@@ -49,7 +49,7 @@ export default function InstallPrompt() {
           transition={{ type: 'spring', damping: 22, stiffness: 260 }}
           style={{
             position: 'fixed',
-            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 66px)',
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 62px)',
             left: 12,
             right: 12,
             zIndex: 1400,

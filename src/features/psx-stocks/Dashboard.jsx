@@ -221,24 +221,24 @@ export default function PSXDashboard() {
   return (
     <Box sx={{ pb: isMobile ? 1 : 0 }}>
       {/* ── PSX Logo + Title ── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-        <Box component="img" src="/psx.png" alt="PSX" sx={{ width: 36, height: 36, borderRadius: 2, objectFit: 'contain' }} />
-        <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em' }}>PSX</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: isMobile ? 2 : 3 }}>
+        <Box component="img" src="/psx.png" alt="PSX" sx={{ width: isMobile ? 30 : 36, height: isMobile ? 30 : 36, borderRadius: 2, objectFit: 'contain' }} />
+        <Typography sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: 800, letterSpacing: '-0.03em' }}>PSX</Typography>
       </Box>
 
       {/* ── Stat Cards ── */}
       {isMobile ? (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card sx={{ mb: 2.5, overflow: 'hidden' }}>
+          <Card sx={{ mb: 1.5, overflow: 'hidden' }}>
             <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
                 {statCards.map((s, i) => {
                   const Icon = s.icon;
                   return (
                     <Box key={i} sx={{
-                      p: 2,
-                      borderRight: i % 2 === 0 ? `1px solid ${isDark ? '#1c1c1c' : '#f0f0f0'}` : 'none',
-                      borderBottom: i < 2 ? `1px solid ${isDark ? '#1c1c1c' : '#f0f0f0'}` : 'none',
+                      px: 1.75, py: 1.5,
+                      borderRight: i % 2 === 0 ? `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0f0f0'}` : 'none',
+                      borderBottom: i < 2 ? `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0f0f0'}` : 'none',
                       ...(s.highlight && { bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }),
                     }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
@@ -293,10 +293,10 @@ export default function PSXDashboard() {
 
       {/* ── Allocation Pie + Growth Chart ── */}
       {pieData.length > 0 && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid container spacing={isMobile ? 1.5 : 2} sx={{ mb: isMobile ? 2 : 3 }}>
           <Grid size={{ xs: 12, md: 6 }}>
             <Card sx={{ overflow: 'visible', height: '100%' }}>
-              <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
+              <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
                 <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.02em', mb: 1 }}>
                   Allocation
                 </Typography>
@@ -377,7 +377,7 @@ export default function PSXDashboard() {
       )}
 
       {/* ── Holdings ── */}
-      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.02em', mb: 1 }}>
+      <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', fontWeight: 600, letterSpacing: '0.02em', mb: 1 }}>
         Holdings ({holdings.length})
       </Typography>
       {holdings.length === 0 ? (
@@ -394,8 +394,8 @@ export default function PSXDashboard() {
           const color = getPnLColor(gainLoss);
           return (
             <motion.div key={h.symbol} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: fi * 0.04 }}>
-              <Card sx={{ mb: 1.5 }}>
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Card sx={{ mb: isMobile ? 1 : 1.5 }}>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
                   {/* Symbol row */}
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
                     <Box sx={{ flex: 1, minWidth: 0 }}>

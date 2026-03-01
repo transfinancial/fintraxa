@@ -190,7 +190,7 @@ export default function IEDashboard() {
       {/* ── Month Navigation ── */}
       <Box sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: { xs: 1.5, md: 2.5 },
-        mb: 3.5, mt: 1, py: 1.5,
+        mb: isMobile ? 2 : 3.5, mt: 1, py: isMobile ? 0.75 : 1.5,
       }}>
         <IconButton onClick={goPrev}
           sx={{
@@ -218,7 +218,7 @@ export default function IEDashboard() {
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}>
             <Box sx={{ textAlign: 'center', minWidth: { xs: 160, md: 200 }, userSelect: 'none' }}>
               <Typography sx={{
-                fontSize: { xs: '2rem', md: '2.4rem' },
+                fontSize: { xs: '1.6rem', md: '2.4rem' },
                 fontWeight: 900,
                 letterSpacing: '-0.04em',
                 lineHeight: 1,
@@ -263,16 +263,16 @@ export default function IEDashboard() {
       {/* ── Stat Cards (Home Dashboard style) ── */}
       {isMobile ? (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card sx={{ mb: 2.5, overflow: 'hidden' }}>
+          <Card sx={{ mb: 1.5, overflow: 'hidden' }}>
             <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
                 {statCards.map((s, i) => {
                   const Icon = s.icon;
                   return (
                     <Box key={i} sx={{
-                      p: 2,
-                      borderRight: i % 2 === 0 ? `1px solid ${isDark ? '#1c1c1c' : '#f0f0f0'}` : 'none',
-                      borderBottom: i < 2 ? `1px solid ${isDark ? '#1c1c1c' : '#f0f0f0'}` : 'none',
+                      px: 1.75, py: 1.5,
+                      borderRight: i % 2 === 0 ? `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0f0f0'}` : 'none',
+                      borderBottom: i < 2 ? `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f0f0f0'}` : 'none',
                       ...(s.highlight && { bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }),
                     }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
@@ -351,9 +351,9 @@ export default function IEDashboard() {
       )}
 
       {/* ── Expense Breakdown Chart ── */}
-      <Card sx={{ mb: 3, overflow: 'visible' }}>
-        <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.02em', mb: 1 }}>
+      <Card sx={{ mb: isMobile ? 2 : 3, overflow: 'visible' }}>
+        <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
+          <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', fontWeight: 600, letterSpacing: '0.02em', mb: 1 }}>
             Expense Breakdown
           </Typography>
           {expensePieData.length > 0 ? (
@@ -396,8 +396,8 @@ export default function IEDashboard() {
       </Card>
 
       {/* ── Recent Transactions ── */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent sx={{ p: isMobile ? 2 : 2.5, '&:last-child': { pb: isMobile ? 2 : 2.5 } }}>
+      <Card sx={{ mb: isMobile ? 1.5 : 2 }}>
+        <CardContent sx={{ p: isMobile ? 1.5 : 2.5, '&:last-child': { pb: isMobile ? 1.5 : 2.5 } }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
             <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.02em' }}>
               Recent Transactions
@@ -429,7 +429,7 @@ export default function IEDashboard() {
                   sx={{
                     display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25,
                     borderBottom: i < recentTransactions.length - 1
-                      ? `1px solid ${isDark ? '#1c1c1c' : '#f5f5f5'}` : 'none',
+                      ? `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#f5f5f5'}` : 'none',
                     cursor: isMobile ? 'pointer' : 'default',
                   }}
                 >

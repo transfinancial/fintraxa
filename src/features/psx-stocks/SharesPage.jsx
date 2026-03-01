@@ -264,8 +264,8 @@ export default function SharesPage() {
   return (
     <Box sx={{ pb: isMobile ? 1 : 0 }}>
       {/* ── Header ── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+        <Typography sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
           Shares
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -298,12 +298,12 @@ export default function SharesPage() {
 
       {/* ── Search ── */}
       <TextField fullWidth size="small" placeholder="Search by symbol or company..."
-        value={search} onChange={(e) => setSearch(e.target.value)} sx={{ mb: 1.5 }}
+        value={search} onChange={(e) => setSearch(e.target.value)} sx={{ mb: 1 }}
         InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment> }}
       />
 
       {/* ── Filter Chips ── */}
-      <Box sx={{ display: 'flex', gap: 0.75, mb: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 1.25, flexWrap: 'wrap' }}>
         {filterChips.map((c) => (
           <Chip key={c.key} label={c.label} icon={c.icon} size="small"
             onClick={() => setFilter(c.key)}
@@ -339,7 +339,7 @@ export default function SharesPage() {
           const color = getPnLColor(change);
           return (
             <motion.div key={sym || i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.3) }}>
-              <Card sx={{ mb: 0.75, cursor: 'pointer', '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' } }}
+              <Card sx={{ mb: 0.5, cursor: 'pointer', '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' } }}
                 onClick={() => openDetail(stock)}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -366,12 +366,12 @@ export default function SharesPage() {
 
       {/* ─────── Stock Detail / Trade Dialog ─────── */}
       <Dialog open={Boolean(detailStock)} onClose={() => setDetailStock(null)} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { borderRadius: 4 } }}>
+        PaperProps={{ sx: { borderRadius: 4, mx: isMobile ? 1.5 : 'auto', my: isMobile ? 2 : 'auto', maxHeight: isMobile ? 'calc(100dvh - 32px)' : undefined } }}>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600, fontSize: '0.9rem', pb: 1 }}>
           {detailStock?.symbol}
           <IconButton onClick={() => setDetailStock(null)} size="small"><Close sx={{ fontSize: 18 }} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ px: 3 }}>
+        <DialogContent sx={{ px: isMobile ? 2 : 3 }}>
           {detailStock && (
             <>
               {/* Stock info */}

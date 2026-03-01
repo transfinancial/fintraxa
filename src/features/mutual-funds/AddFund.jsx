@@ -110,18 +110,18 @@ export default function AddFund() {
 
   return (
     <Box sx={{ pb: isMobile ? 1 : 0 }}>
-      <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em', mb: 3 }}>
+      <Typography sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: 800, letterSpacing: '-0.03em', mb: isMobile ? 2 : 3 }}>
         Add Fund
       </Typography>
 
       {/* Free Cash Card */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <Card sx={{
-          mb: 2.5, overflow: 'hidden',
+          mb: 2, overflow: 'hidden',
           bgcolor: isDark ? '#111' : '#fafafa',
           border: `1.5px solid ${isDark ? '#333' : '#d4d4d4'}`,
         }}>
-          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{
                 width: 38, height: 38, borderRadius: '12px',
@@ -152,7 +152,7 @@ export default function AddFund() {
       {/* Form Card */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
         <Card>
-          <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
+          <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
             {/* Fund Search — instant client-side filtering */}
             <Autocomplete
               options={fundOptions}
@@ -177,22 +177,10 @@ export default function AddFund() {
               renderOption={(props, option) => (
                 <li {...props} key={option.fund_id || option.fund_name}>
                   <Box sx={{ width: '100%', py: 0.25 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{
-                        width: 28, height: 28, borderRadius: 1.5,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                        fontWeight: 800, fontSize: 8, color: 'text.secondary', flexShrink: 0,
-                      }}>
-                        {shortFundName(option.fund_name)}
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={600} noWrap sx={{ fontSize: '0.78rem' }}>{option.fund_name}</Typography>
-                        <Typography sx={{ fontSize: '0.62rem', color: 'text.secondary' }}>
-                          NAV {formatNumber(option.nav, 4)} · Offer {formatNumber(option.offer_price, 4)}
-                        </Typography>
-                      </Box>
-                    </Box>
+                    <Typography variant="body2" fontWeight={600} noWrap sx={{ fontSize: '0.78rem' }}>{option.fund_name}</Typography>
+                    <Typography sx={{ fontSize: '0.6rem', color: 'text.secondary' }}>
+                      NAV {formatNumber(option.nav, 4)} · Offer {formatNumber(option.offer_price, 4)}
+                    </Typography>
                   </Box>
                 </li>
               )}

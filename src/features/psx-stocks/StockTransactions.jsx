@@ -58,7 +58,7 @@ function TransactionRow({ txn, onEdit, onDelete, onView, isMobile, isDark }) {
   const editProgress = Math.min(Math.max(-offset / 80, 0), 1);
 
   return (
-    <Box sx={{ position: 'relative', mb: 0.75, overflow: 'hidden', borderRadius: 3 }}>
+    <Box sx={{ position: 'relative', mb: 0.5, overflow: 'hidden', borderRadius: 3 }}>
       {/* Swipe backgrounds (mobile) */}
       {isMobile && (
         <>
@@ -246,7 +246,7 @@ export default function StockTransactions() {
 
   return (
     <Box sx={{ pb: isMobile ? 1 : 0 }}>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 2, letterSpacing: '-0.01em' }}>
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 1.5, letterSpacing: '-0.01em', fontSize: isMobile ? '1.2rem' : undefined }}>
         Trades
       </Typography>
 
