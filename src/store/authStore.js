@@ -16,8 +16,9 @@ export const useAuthStore = create((set, get) => ({
   },
 
   signUp: async (email, password, fullName) => {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: { data: { full_name: fullName } },
     });
@@ -26,7 +27,8 @@ export const useAuthStore = create((set, get) => ({
   },
 
   signIn: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
     if (error) throw error;
     return data;
   },

@@ -86,8 +86,10 @@ const getFriendlyAuthError = (error, isSignUp) => {
   if (rawMessage.includes('too many requests') || rawMessage.includes('rate limit')) {
     return 'Too many attempts. Please wait a moment and try again.';
   }
-  if (rawMessage.includes('network') || rawMessage.includes('fetch')) {
-    return 'Network issue detected. Check your connection and try again.';
+  if (rawMessage.includes('network') || rawMessage.includes('fetch') || rawMessage.includes('failed to fetch')) {
+    const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    if (isOffline) return 'You appear to be offline. Please check your internet connection.';
+    return 'Cannot reach the authentication server. Disable VPN/ad-blocker and verify Supabase URL/key.';
   }
 
   return isSignUp
@@ -122,8 +124,8 @@ export default function AuthPage() {
     const trimmedFullName = fullName.trim();
 
     if (isSignUp && !trimmedFullName) nextErrors.fullName = 'Enter your full name';
-    if (!trimmedEmail) nextErrors.email = isSignUp ? 'Enter your email address' : 'Enter your username or email';
-    else if (isSignUp && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) nextErrors.email = 'Use a valid email format';
+    if (!trimmedEmail) nextErrors.email = 'Enter your email address';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) nextErrors.email = 'Use a valid email format';
 
     if (!password.trim()) nextErrors.password = 'Enter your password';
     else if (password.length < 6) nextErrors.password = 'Use at least 6 characters';
@@ -148,12 +150,13 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       if (isSignUp) {
-        await signUp(email, password, fullName);
+        await signUp(normalizedEmail, password, fullName);
         setSuccess('Account created! Check your email to confirm.');
         setIsSignUp(false);
       } else {
-        await signIn(email, password);
+        await signIn(normalizedEmail, password);
       }
     } catch (err) { setError(getFriendlyAuthError(err, isSignUp)); }
     finally { setLoading(false); }
@@ -242,8 +245,8 @@ export default function AuthPage() {
                   InputProps={{ endAdornment: <InputAdornment position="end"><PersonIcon /></InputAdornment> }}
                 />
               )}
-              <TextField fullWidth placeholder={isSignUp ? 'Email' : 'Username'}
-                type={isSignUp ? 'email' : 'text'} value={email}
+              <TextField fullWidth placeholder="Email"
+                type="email" value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   setFieldErrors((prev) => ({ ...prev, email: '' }));
