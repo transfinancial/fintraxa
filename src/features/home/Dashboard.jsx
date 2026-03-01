@@ -125,7 +125,7 @@ export default function HomeDashboard() {
   }
 
   return (
-    <Box sx={{ pb: isMobile ? 10 : 0 }}>
+    <Box sx={{ pb: isMobile ? 2 : 0 }}>
       {/* Title - only on desktop (mobile has logo in header) */}
       {!isMobile && (
         <Typography sx={{
@@ -139,32 +139,33 @@ export default function HomeDashboard() {
       {isMobile ? (
         /* Mobile: merged 2×2 card */
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card sx={{ mb: 2.5, overflow: 'hidden' }}>
+          <Card sx={{ mb: 1.5, overflow: 'hidden', borderRadius: 3 }}>
             <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
                 {statCards.map((s, i) => {
                   const Icon = s.icon;
                   return (
                     <Box key={i} sx={{
-                      p: 2,
-                      borderRight: i % 2 === 0 ? `1px solid ${isDark ? '#1c1c1c' : '#f0f0f0'}` : 'none',
-                      borderBottom: i < 2 ? `1px solid ${isDark ? '#1c1c1c' : '#f0f0f0'}` : 'none',
+                      px: 1.75, py: 1.5,
+                      borderRight: i % 2 === 0 ? `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` : 'none',
+                      borderBottom: i < 2 ? `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` : 'none',
                       ...(s.highlight && {
-                        bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                        bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
                       }),
                     }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
-                        <Icon sx={{ fontSize: 14, color: 'text.secondary', opacity: 0.7 }} />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mb: 0.4 }}>
+                        <Icon sx={{ fontSize: 13, color: 'text.secondary', opacity: 0.6 }} />
                         <Typography sx={{
-                          fontSize: '0.62rem', color: 'text.secondary',
-                          fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase',
+                          fontSize: '0.58rem', color: 'text.secondary',
+                          fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
                         }}>
                           {s.label}
                         </Typography>
                       </Box>
                       <Typography sx={{
-                        fontSize: s.highlight ? '1.1rem' : '0.95rem',
+                        fontSize: s.highlight ? '1.15rem' : '1rem',
                         fontWeight: 700, color: 'text.primary', fontFeatureSettings: '"tnum"',
+                        letterSpacing: '-0.02em',
                       }} className="currency">
                         {s.value}
                       </Typography>
@@ -230,12 +231,12 @@ export default function HomeDashboard() {
       )}
 
       {/* ── Charts Row ── */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={1.5} sx={{ mb: 2 }}>
         {/* Pie Chart - Asset Distribution */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card sx={{ overflow: 'visible', height: '100%' }}>
-            <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.02em', mb: 1 }}>
+          <Card sx={{ overflow: 'visible', height: '100%', borderRadius: 3 }}>
+            <CardContent sx={{ p: isMobile ? 1.75 : 2.5 }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.03em', mb: 0.5, textTransform: 'uppercase', color: 'text.secondary' }}>
                 Asset Distribution
               </Typography>
               {pieData.length > 0 ? (
@@ -283,9 +284,9 @@ export default function HomeDashboard() {
 
         {/* Growth Line Chart */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: isMobile ? 2 : 2.5 }}>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.02em', mb: 1 }}>
+          <Card sx={{ height: '100%', borderRadius: 3 }}>
+            <CardContent sx={{ p: isMobile ? 1.75 : 2.5 }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.03em', mb: 0.5, textTransform: 'uppercase', color: 'text.secondary' }}>
                 Growth Over Time
               </Typography>
               {growthData.some((d) => d.total > 0) ? (

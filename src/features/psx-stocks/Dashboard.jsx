@@ -219,7 +219,7 @@ export default function PSXDashboard() {
   }
 
   return (
-    <Box sx={{ pb: isMobile ? 10 : 0 }}>
+    <Box sx={{ pb: isMobile ? 1 : 0 }}>
       {/* ── PSX Logo + Title ── */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
         <Box component="img" src="/psx.png" alt="PSX" sx={{ width: 36, height: 36, borderRadius: 2, objectFit: 'contain' }} />

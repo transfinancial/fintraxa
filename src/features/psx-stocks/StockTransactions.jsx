@@ -245,7 +245,7 @@ export default function StockTransactions() {
   };
 
   return (
-    <Box sx={{ pb: isMobile ? 10 : 0 }}>
+    <Box sx={{ pb: isMobile ? 1 : 0 }}>
       <Typography variant="h5" fontWeight={700} sx={{ mb: 2, letterSpacing: '-0.01em' }}>
         Trades
       </Typography>

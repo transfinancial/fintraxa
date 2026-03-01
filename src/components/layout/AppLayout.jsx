@@ -374,25 +374,48 @@ export default function AppLayout() {
       )}
 
       {/* ═══════════════════════════════════════════
-          MOBILE: Glassmorphism Header + Bottom Nav
+          MOBILE: Full-bleed Header + Bottom Nav
           ═══════════════════════════════════════════ */}
-      {isMobile && isHomeSection && (
+      {isMobile && (
         <Box
           component="header"
           sx={{
-            position: 'sticky', top: 0, zIndex: 1200,
+            position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1200,
             display: 'flex', alignItems: 'center',
-            px: 2, py: 1.25, minHeight: 56,
-            pt: 'calc(env(safe-area-inset-top, 0px) + 10px)',
-            ...glass(isDark, 0.75),
-            borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`,
+            px: 1.75,
+            pt: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+            pb: 1,
+            minHeight: 'calc(env(safe-area-inset-top, 0px) + 52px)',
+            bgcolor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(28px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+            borderBottom: `0.5px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
           }}
         >
-          <FintraxaLogo size={34} sx={{ mr: 1.25 }} />
-          <Typography sx={{ flex: 1, fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-0.04em', color: 'text.primary' }}>
-            Fintraxa
-          </Typography>
-          <IconButton size="small" onClick={() => setProfileOpen(true)}>
+          {isHomeSection ? (
+            <>
+              <FintraxaLogo size={30} sx={{ mr: 1 }} />
+              <Typography sx={{ flex: 1, fontSize: '1.05rem', fontWeight: 800, letterSpacing: '-0.04em', color: 'text.primary' }}>
+                Fintraxa
+              </Typography>
+            </>
+          ) : (
+            <>
+              <Box sx={{
+                width: 30, height: 30, borderRadius: 2, display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                color: 'text.primary', mr: 1,
+                '& .MuiSvgIcon-root': { fontSize: 18 },
+              }}>
+                {currentSection?.icon}
+              </Box>
+              <Typography sx={{ flex: 1, fontSize: '0.95rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'text.primary' }}>
+                {currentSection?.label}
+              </Typography>
+            </>
+          )}
+          <IconButton size="small" onClick={() => setProfileOpen(true)} sx={{ p: 0.5 }}>
             <Avatar sx={{ width: 30, height: 30, bgcolor: isDark ? '#fff' : '#000', color: isDark ? '#000' : '#fff', fontSize: '0.7rem', fontWeight: 700 }}>
               {user?.email?.[0]?.toUpperCase()}
             </Avatar>
@@ -404,11 +427,14 @@ export default function AppLayout() {
       <Box sx={{
         flex: 1,
         ml: isMobile ? 0 : (isHomeSection ? 0 : `${SIDEBAR_COLLAPSED + 40}px`),
-        mt: isMobile ? 0 : '88px',
+        mt: isMobile ? 'calc(env(safe-area-inset-top, 0px) + 52px)' : '88px',
         display: 'flex', flexDirection: 'column', minHeight: 0,
       }}>
         <Box sx={{
-          flex: 1, p: { xs: 2, md: 3 }, pb: isMobile ? 'calc(80px + env(safe-area-inset-bottom, 0px))' : 3,
+          flex: 1,
+          px: { xs: 1.25, sm: 2, md: 3 },
+          pt: { xs: 1.25, md: 3 },
+          pb: isMobile ? 'calc(64px + env(safe-area-inset-bottom, 0px) + 12px)' : 3,
           maxWidth: 1000, width: '100%', mx: 'auto',
         }}>
           <Outlet />
@@ -423,20 +449,23 @@ export default function AppLayout() {
           showLabels
           sx={{
             position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200,
-            bgcolor: isDark ? 'rgba(10,10,10,0.65)' : 'rgba(255,255,255,0.55)',
-            backdropFilter: 'blur(40px) saturate(200%)',
-            WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+            bgcolor: isDark ? 'rgba(0,0,0,0.88)' : 'rgba(255,255,255,0.88)',
+            backdropFilter: 'blur(32px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(32px) saturate(180%)',
             border: 'none',
-            borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`,
-            pb: 'calc(env(safe-area-inset-bottom, 0px) + 4px)',
-            height: 'calc(56px + env(safe-area-inset-bottom, 0px) + 4px)',
+            borderTop: `0.5px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'}`,
+            pb: 'calc(env(safe-area-inset-bottom, 0px) + 2px)',
+            height: 'calc(56px + env(safe-area-inset-bottom, 0px) + 2px)',
             '& .MuiBottomNavigationAction-root': {
-              minWidth: 0, gap: 0.25, bgcolor: 'transparent',
+              minWidth: 0, gap: 0.2, py: 0.75, bgcolor: 'transparent',
+              color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)',
+              transition: 'color 0.2s ease',
               '&.Mui-selected': { color: isDark ? '#fff' : '#000' },
+              '& .MuiSvgIcon-root': { fontSize: 22 },
             },
             '& .MuiBottomNavigationAction-label': {
-              fontSize: '0.58rem', fontWeight: 600,
-              '&.Mui-selected': { fontSize: '0.58rem' },
+              fontSize: '0.56rem', fontWeight: 600, letterSpacing: '0.02em',
+              '&.Mui-selected': { fontSize: '0.56rem', fontWeight: 700 },
             },
           }}
         >

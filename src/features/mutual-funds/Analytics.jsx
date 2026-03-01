@@ -255,7 +255,7 @@ export default function MFAnalytics() {
   }
 
   return (
-    <Box sx={{ pb: isMobile ? 10 : 0 }}>
+    <Box sx={{ pb: isMobile ? 1 : 0 }}>
       <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.03em', mb: 3 }}>
         Fund Analytics
       </Typography>

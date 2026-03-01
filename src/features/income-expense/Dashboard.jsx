@@ -185,7 +185,7 @@ export default function IEDashboard() {
   }
 
   return (
-    <Box {...handlers} sx={{ pb: isMobile ? 10 : 0 }}>
+    <Box {...handlers} sx={{ pb: isMobile ? 1 : 0 }}>
 
       {/* ── Month Navigation ── */}
       <Box sx={{
