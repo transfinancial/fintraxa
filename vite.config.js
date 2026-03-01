@@ -24,6 +24,7 @@ export default defineConfig({
         ]
       },
       workbox: {
+        navigateFallbackDenylist: [/^\/auth/, /supabase/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/api\.fintraxa\.com\/api\/mufap\/.*/i,

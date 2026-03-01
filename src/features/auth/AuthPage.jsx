@@ -158,7 +158,10 @@ export default function AuthPage() {
       } else {
         await signIn(normalizedEmail, password);
       }
-    } catch (err) { setError(getFriendlyAuthError(err, isSignUp)); }
+    } catch (err) {
+      console.error('[Fintraxa Auth]', err?.message || err, err);
+      setError(getFriendlyAuthError(err, isSignUp));
+    }
     finally { setLoading(false); }
   };
 
