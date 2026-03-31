@@ -14,6 +14,8 @@ import {
   QueryStatsRounded as AnalyticsIcon,
   ExploreRounded as BrowseIcon,
   AccountBalanceWalletRounded as WalletIcon,
+  ScienceRounded as ResearchIcon,
+  BuildRounded as ToolsIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
@@ -69,6 +71,8 @@ const sections = [
       { label: 'Shares', path: '/stocks/shares', icon: <BrowseIcon sx={{ fontSize: 20 }} /> },
       { label: 'Trades', path: '/stocks/transactions', icon: <TransactionsIcon sx={{ fontSize: 20 }} /> },
       { label: 'Analytics', path: '/stocks/analytics', icon: <AnalyticsIcon sx={{ fontSize: 20 }} /> },
+      { label: 'Research', path: '/stocks/research', icon: <ResearchIcon sx={{ fontSize: 20 }} /> },
+      { label: 'Tools', path: '/stocks/tools', icon: <ToolsIcon sx={{ fontSize: 20 }} /> },
     ],
   },
 ];

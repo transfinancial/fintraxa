@@ -9,7 +9,7 @@ export function buildTheme(mode = 'light') {
   return createTheme({
     palette: {
       mode,
-      primary: { main: '#6c63ff', light: '#8b83ff', dark: '#4a42d4' },
+      primary: { main: '#0d9488', light: '#14b8a6', dark: '#0f766e' },
       secondary: { main: isDark ? '#9ca3af' : '#6b7280' },
       success: { main: '#10b981', light: isDark ? '#064e3b' : '#d1fae5' },
       error: { main: '#ef4444', light: isDark ? '#7f1d1d' : '#fee2e2' },
@@ -26,7 +26,7 @@ export function buildTheme(mode = 'light') {
       divider: borderColor,
     },
     typography: {
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       h4: { fontWeight: 700, letterSpacing: '-0.025em' },
       h5: { fontWeight: 700, letterSpacing: '-0.015em' },
       h6: { fontWeight: 600, letterSpacing: '-0.01em' },
@@ -133,7 +133,23 @@ export function buildTheme(mode = 'light') {
         },
       },
       MuiDialog: {
-        styleOverrides: { paper: { borderRadius: 20, padding: 8, backgroundImage: 'none' } },
+        styleOverrides: {
+          paper: {
+            borderRadius: 20, padding: 8, backgroundImage: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          },
+        },
+      },
+      MuiDialogContent: {
+        styleOverrides: {
+          root: {
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          },
+        },
       },
       MuiBottomNavigation: {
         styleOverrides: {

@@ -17,6 +17,8 @@ import { useAuthStore } from '../../store/authStore';
 import { useAppStore } from '../../store/appStore';
 import { formatCurrency, formatDate, formatNumber } from '../../lib/formatters';
 import FintraxaLogo from '../../components/FintraxaLogo';
+import StockLogo from '../../components/StockLogo';
+import { getStockName } from '../../lib/stockMeta';
 
 const BUY_COLOR = '#15803d';
 const SELL_COLOR = '#b91c1c';
@@ -97,10 +99,16 @@ function TransactionRow({ txn, onEdit, onDelete, onView, isMobile, isDark }) {
           boxShadow: 'none',
         }}>
         <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <StockLogo symbol={txn.symbol} size="sm" />
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, lineHeight: 1.2 }} noWrap>
-              {txn.symbol}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, lineHeight: 1.2 }} noWrap>
+                {txn.symbol}
+              </Typography>
+              <Typography sx={{ fontSize: '0.6rem', color: 'text.secondary', lineHeight: 1.2 }} noWrap>
+                {getStockName(txn.symbol, txn.company_name)}
+              </Typography>
+            </Box>
             <Typography sx={{ fontSize: '0.62rem', color: 'text.secondary', mt: 0.15 }} noWrap>
               {formatDate(txn.date)} · {formatNumber(txn.quantity, 2)} @ {formatNumber(txn.price, 2)}
             </Typography>
@@ -340,69 +348,97 @@ export default function StockTransactions() {
           <IconButton onClick={() => setViewTxn(null)} size="small"><Close sx={{ fontSize: 18 }} /></IconButton>
         </DialogTitle>
         <DialogContent>
-          {viewTxn && (
-            <Box ref={slipRef} sx={{
-              p: 3, borderRadius: 3,
-              bgcolor: isDark ? '#1a1a1a' : '#fff',
-              border: '1px solid', borderColor: isDark ? '#2a2a2a' : '#f0f0f0',
-            }}>
-              {/* Header */}
-              <Box sx={{ textAlign: 'center', mb: 2.5, pb: 2, borderBottom: '2px dashed', borderColor: isDark ? '#333' : '#e2e8f0' }}>
-                <FintraxaLogo size={28} sx={{ mx: 'auto', mb: 0.5 }} />
-                <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: 'text.primary' }}>Fintraxa</Typography>
-                <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  Trade Receipt
-                </Typography>
-              </Box>
+          {viewTxn && (() => {
+            const isBuy = viewTxn.type === 'buy';
+            const accentColor = isBuy ? BUY_COLOR : SELL_COLOR;
+            const subtotal = Number(viewTxn.price) * Number(viewTxn.quantity);
+            const fee = Number(viewTxn.fee || 0);
+            const total = isBuy ? subtotal + fee : subtotal - fee;
+            return (
+              <Box ref={slipRef} sx={{
+                borderRadius: 3, overflow: 'hidden',
+                bgcolor: isDark ? '#111' : '#fff',
+                border: '1px solid', borderColor: isDark ? '#222' : '#eee',
+              }}>
+                {/* Accent top strip */}
+                <Box sx={{ height: 4, bgcolor: accentColor }} />
 
-              {/* Symbol + Amount */}
-              <Box sx={{ textAlign: 'center', mb: 2.5, py: 1 }}>
-                <Typography sx={{ fontSize: '0.95rem', fontWeight: 700, mb: 0.5 }}>
-                  {viewTxn.symbol}
-                </Typography>
-                <Typography sx={{ fontSize: '0.6rem', color: 'text.secondary', mb: 0.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                  {viewTxn.type === 'buy' ? 'Buy' : 'Sell'}
-                </Typography>
-                <Typography sx={{
-                  fontSize: '1.5rem', fontWeight: 800,
-                  color: viewTxn.type === 'buy' ? BUY_COLOR : SELL_COLOR,
-                }}>
-                  {viewTxn.type === 'buy'
-                    ? formatCurrency(Number(viewTxn.price) * Number(viewTxn.quantity) + Number(viewTxn.fee || 0))
-                    : formatCurrency(Number(viewTxn.price) * Number(viewTxn.quantity) - Number(viewTxn.fee || 0))}
-                </Typography>
-              </Box>
-
-              {/* Details */}
-              {[
-                ['Symbol', viewTxn.symbol],
-                ['Company', viewTxn.company_name || viewTxn.symbol],
-                ['Quantity', `${formatNumber(viewTxn.quantity, 2)} shares`],
-                ['Price', `Rs ${formatNumber(viewTxn.price, 2)}`],
-                ['Subtotal', `Rs ${formatNumber(Number(viewTxn.price) * Number(viewTxn.quantity), 2)}`],
-                ['Broker Fee', `${viewTxn.type === 'sell' ? '−' : '+'}Rs ${formatNumber(viewTxn.fee || 0, 2)}`],
-                [viewTxn.type === 'buy' ? 'Total Cost' : 'Net Received', `Rs ${formatNumber(
-                  viewTxn.type === 'buy'
-                    ? Number(viewTxn.price) * Number(viewTxn.quantity) + Number(viewTxn.fee || 0)
-                    : Number(viewTxn.price) * Number(viewTxn.quantity) - Number(viewTxn.fee || 0), 2)}`],
-                ['Date', formatDate(viewTxn.date)],
-              ].map(([k, v]) => (
-                <Box key={k} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75 }}>
-                  <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>{k}</Typography>
-                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: 'text.primary', maxWidth: 200, textAlign: 'right' }}>
-                    {v}
+                {/* Header: Fintraxa branding */}
+                <Box sx={{ px: 2.5, pt: 2, pb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <FintraxaLogo size={22} />
+                    <Typography sx={{ fontSize: '0.78rem', fontWeight: 700 }}>Fintraxa</Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.5rem', color: 'text.secondary', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
+                    Trade Receipt
                   </Typography>
                 </Box>
-              ))}
 
-              {/* Footer */}
-              <Box sx={{ mt: 2, pt: 1.5, borderTop: '2px dashed', borderColor: isDark ? '#333' : '#e2e8f0', textAlign: 'center' }}>
-                <Typography sx={{ fontSize: '0.52rem', color: 'text.secondary', letterSpacing: '0.04em' }}>
-                  ID: {viewTxn.id.slice(0, 8).toUpperCase()}
-                </Typography>
+                {/* Hero: Stock logo + symbol + amount side-by-side */}
+                <Box sx={{
+                  mx: 2.5, mb: 2, p: 2, borderRadius: 2.5,
+                  bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                  display: 'flex', alignItems: 'center', gap: 1.5,
+                }}>
+                  <StockLogo symbol={viewTxn.symbol} size="lg" />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.15 }}>
+                      <Typography sx={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.01em' }}>{viewTxn.symbol}</Typography>
+                      <Chip label={isBuy ? 'BUY' : 'SELL'} size="small" sx={{
+                        height: 18, fontSize: '0.5rem', fontWeight: 700,
+                        bgcolor: `${accentColor}14`, color: accentColor,
+                      }} />
+                    </Box>
+                    <Typography sx={{ fontSize: '0.6rem', color: 'text.secondary' }} noWrap>
+                      {getStockName(viewTxn.symbol, viewTxn.company_name)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                    <Typography sx={{ fontSize: '1.15rem', fontWeight: 800, color: accentColor, fontFeatureSettings: '"tnum"', lineHeight: 1.1 }}>
+                      {formatCurrency(total)}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.5rem', color: 'text.secondary', mt: 0.15 }}>
+                      {isBuy ? 'Total Cost' : 'Net Received'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Detail rows */}
+                <Box sx={{ px: 2.5, pb: 1 }}>
+                  {[
+                    { label: 'Quantity', value: `${formatNumber(viewTxn.quantity, 2)} shares` },
+                    { label: 'Price per share', value: `Rs ${formatNumber(viewTxn.price, 2)}` },
+                    { label: 'Subtotal', value: `Rs ${formatNumber(subtotal, 2)}` },
+                    { label: 'Broker Fee', value: `${isBuy ? '+' : '−'}Rs ${formatNumber(fee, 2)}` },
+                  ].map((row) => (
+                    <Box key={row.label} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.6, borderBottom: '1px solid', borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }}>
+                      <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary' }}>{row.label}</Typography>
+                      <Typography sx={{ fontSize: '0.68rem', fontWeight: 600, fontFeatureSettings: '"tnum"' }}>{row.value}</Typography>
+                    </Box>
+                  ))}
+                  {/* Total row */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.8, mt: 0.25 }}>
+                    <Typography sx={{ fontSize: '0.72rem', fontWeight: 700 }}>{isBuy ? 'Total Cost' : 'Net Received'}</Typography>
+                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: accentColor, fontFeatureSettings: '"tnum"' }}>Rs {formatNumber(total, 2)}</Typography>
+                  </Box>
+                </Box>
+
+                {/* Footer */}
+                <Box sx={{
+                  mx: 2.5, mb: 2, mt: 1, pt: 1.5,
+                  borderTop: '1.5px dashed', borderColor: isDark ? '#2a2a2a' : '#e5e5e5',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                }}>
+                  <Typography sx={{ fontSize: '0.5rem', color: 'text.secondary' }}>
+                    {formatDate(viewTxn.date)}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.5rem', color: 'text.secondary', letterSpacing: '0.03em' }}>
+                    ID: {viewTxn.id.slice(0, 8).toUpperCase()}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          )}
+            );
+          })()}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <Button onClick={downloadSlip} variant="outlined" size="small"

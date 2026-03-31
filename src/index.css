@@ -53,6 +53,27 @@ body {
   }
 }
 
+/* Recharts — suppress focus outlines & borders on chart containers */
+.recharts-wrapper,
+.recharts-wrapper svg,
+.recharts-surface,
+.recharts-wrapper *:focus,
+.recharts-wrapper *:focus-visible {
+  outline: none !important;
+}
+
+/* Hide scrollbars inside all dialogs, drawers, and modals */
+.MuiDialog-root *::-webkit-scrollbar,
+.MuiDrawer-root *::-webkit-scrollbar,
+.MuiDialog-paper::-webkit-scrollbar,
+.MuiDialogContent-root::-webkit-scrollbar {
+  display: none !important;
+}
+.MuiDialog-root *,
+.MuiDrawer-root * {
+  scrollbar-width: none;
+}
+
 /* PKR currency styling */
 .currency {
   font-variant-numeric: tabular-nums;
@@ -82,7 +103,7 @@ body {
 
 /* Selection */
 ::selection {
-  background: rgba(108, 99, 255, 0.2);
+  background: rgba(13, 148, 136, 0.2);
   color: inherit;
 }
 

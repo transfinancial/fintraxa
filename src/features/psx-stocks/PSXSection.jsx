@@ -6,6 +6,8 @@ const Dashboard = lazy(() => import('./Dashboard'));
 const SharesPage = lazy(() => import('./SharesPage'));
 const StockTransactions = lazy(() => import('./StockTransactions'));
 const Analytics = lazy(() => import('./Analytics'));
+const Research = lazy(() => import('./Research'));
+const Tools = lazy(() => import('./Tools'));
 
 const Loader = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
@@ -31,6 +33,8 @@ export default function PSXSection() {
     { label: 'Shares', component: <Suspense fallback={<Loader />}><SharesPage /></Suspense> },
     { label: 'Trades', component: <Suspense fallback={<Loader />}><StockTransactions /></Suspense> },
     { label: 'Analytics', component: <Suspense fallback={<Loader />}><Analytics /></Suspense> },
+    { label: 'Research', component: <Suspense fallback={<Loader />}><Research /></Suspense> },
+    { label: 'Tools', component: <Suspense fallback={<Loader />}><Tools /></Suspense> },
   ];
 
   return <SwipeablePages pages={pages} />;

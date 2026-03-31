@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Box, Card, CardContent, Typography, Grid, Skeleton, Chip, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Card, CardContent, Typography, Grid, Skeleton, Chip, useMediaQuery, useTheme, IconButton, Menu, MenuItem, ListItemText, alpha } from '@mui/material';
 import {
   ShowChartRounded, TrendingUpRounded, TrendingDownRounded,
-  SavingsRounded, PieChartRounded,
+  SavingsRounded, PieChartRounded, CategoryRounded,
+  SortRounded, CheckRounded,
 } from '@mui/icons-material';
 import {
   PieChart, Pie, Cell, Sector, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
 } from 'recharts';
+import { getStockSector, getSectorColor } from '../../lib/psxSectors';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
@@ -15,6 +17,8 @@ import { psxAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { formatCurrency, formatPercent, formatNumber, getPnLColor } from '../../lib/formatters';
 import { subMonths, format } from 'date-fns';
+import StockLogo from '../../components/StockLogo';
+import { getStockName } from '../../lib/stockMeta';
 
 /* ─── Profit / Loss color palettes ─── */
 const profitColors = ['#22c55e', '#4ade80', '#86efac', '#bbf7d0'];
@@ -85,6 +89,8 @@ export default function PSXDashboard() {
   const isDark = theme.palette.mode === 'dark';
   const [activeIdx, setActiveIdx] = useState(-1);
   const isMobile = useMediaQuery('(max-width:768px)');
+  const [holdingsSort, setHoldingsSort] = useState('alpha');
+  const [sortAnchor, setSortAnchor] = useState(null);
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['stock-transactions', user?.id],
@@ -104,7 +110,7 @@ export default function PSXDashboard() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { holdings, totals, pieData, priceMap } = useMemo(() => {
+  const { holdings, totals, pieData, priceMap, sectorData } = useMemo(() => {
     const priceMap = {};
     if (liveStocks?.data) liveStocks.data.forEach((s) => { priceMap[s.symbol?.toUpperCase()] = { price: s.current, change: s.change, changePct: s.change_pct }; });
 
@@ -144,8 +150,23 @@ export default function PSXDashboard() {
       return { name: h.symbol, value: currentValue, gainLoss: Math.round(gl), color };
     }).sort((a, b) => b.value - a.value);
 
+    /* Sector distribution */
+    const sectorMap = {};
+    holdings.forEach((h) => {
+      const sector = getStockSector(h.symbol);
+      const livePrice = priceMap[h.symbol]?.price || h.avgPrice;
+      const currentValue = h.totalShares * livePrice;
+      if (!sectorMap[sector]) sectorMap[sector] = { sector, invested: 0, currentValue: 0, stocks: 0 };
+      sectorMap[sector].invested += h.totalCost;
+      sectorMap[sector].currentValue += currentValue;
+      sectorMap[sector].stocks += 1;
+    });
+    const sectorData = Object.values(sectorMap)
+      .map((s) => ({ ...s, pnl: s.currentValue - s.invested, pct: totalCurrentValue > 0 ? (s.currentValue / totalCurrentValue) * 100 : 0 }))
+      .sort((a, b) => b.currentValue - a.currentValue);
+
     return {
-      holdings, priceMap, pieData,
+      holdings, priceMap, pieData, sectorData,
       totals: {
         invested: totalInvested, currentValue: totalCurrentValue,
         gainLoss: totalCurrentValue - totalInvested,
@@ -377,32 +398,93 @@ export default function PSXDashboard() {
       )}
 
       {/* ── Holdings ── */}
-      <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', fontWeight: 600, letterSpacing: '0.02em', mb: 1 }}>
-        Holdings ({holdings.length})
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', fontWeight: 600, letterSpacing: '0.02em' }}>
+          Holdings ({holdings.length})
+        </Typography>
+        <IconButton size="small" onClick={(e) => setSortAnchor(e.currentTarget)}
+          sx={{ border: `1px solid ${isDark ? '#333' : '#ddd'}`, borderRadius: 2, width: 28, height: 28 }}>
+          <SortRounded sx={{ fontSize: 15, color: 'text.secondary' }} />
+        </IconButton>
+      </Box>
+      <Menu anchorEl={sortAnchor} open={Boolean(sortAnchor)} onClose={() => setSortAnchor(null)}
+        slotProps={{ paper: { sx: { minWidth: 160, borderRadius: 2.5 } } }}>
+        {[
+          { value: 'alpha', label: 'A-Z' },
+          { value: 'alpha_desc', label: 'Z-A' },
+          { value: 'value_desc', label: 'Highest Value' },
+          { value: 'value_asc', label: 'Lowest Value' },
+          { value: 'pnl_desc', label: 'Best P&L' },
+          { value: 'pnl_asc', label: 'Worst P&L' },
+          { value: 'weight_desc', label: 'Largest Weight' },
+        ].map((o) => (
+          <MenuItem key={o.value} selected={holdingsSort === o.value}
+            onClick={() => { setHoldingsSort(o.value); setSortAnchor(null); }}
+            sx={{ fontSize: '0.72rem', py: 0.75, gap: 1 }}>
+            {holdingsSort === o.value && <CheckRounded sx={{ fontSize: 14, color: 'primary.main' }} />}
+            <ListItemText primaryTypographyProps={{ fontSize: '0.72rem', fontWeight: holdingsSort === o.value ? 700 : 400 }}>{o.label}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
       {holdings.length === 0 ? (
         <Card sx={{ p: 4, textAlign: 'center' }}>
           <Typography color="text.secondary" variant="body2">No stock holdings yet</Typography>
         </Card>
       ) : (
-        holdings.map((h, fi) => {
+        [...holdings].sort((a, b) => {
+          const aLive = priceMap[a.symbol]?.price || a.avgPrice;
+          const bLive = priceMap[b.symbol]?.price || b.avgPrice;
+          const aVal = a.totalShares * aLive;
+          const bVal = b.totalShares * bLive;
+          const aPnl = aVal - a.totalCost;
+          const bPnl = bVal - b.totalCost;
+          switch (holdingsSort) {
+            case 'alpha': return a.symbol.localeCompare(b.symbol);
+            case 'alpha_desc': return b.symbol.localeCompare(a.symbol);
+            case 'value_desc': return bVal - aVal;
+            case 'value_asc': return aVal - bVal;
+            case 'pnl_desc': return bPnl - aPnl;
+            case 'pnl_asc': return aPnl - bPnl;
+            case 'weight_desc': return b.totalCost - a.totalCost;
+            default: return 0;
+          }
+        }).map((h, fi) => {
           const liveData = priceMap[h.symbol] || {};
           const livePrice = liveData.price || h.avgPrice;
           const currentValue = h.totalShares * livePrice;
           const gainLoss = currentValue - h.totalCost;
           const gainPct = h.totalCost > 0 ? (gainLoss / h.totalCost) * 100 : 0;
           const color = getPnLColor(gainLoss);
+          const sector = getStockSector(h.symbol);
+          const portfolioPct = totals.invested > 0 ? (h.totalCost / totals.invested) * 100 : 0;
           return (
             <motion.div key={h.symbol} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: fi * 0.04 }}>
               <Card sx={{ mb: isMobile ? 1 : 1.5 }}>
                 <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
                   {/* Symbol row */}
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, lineHeight: 1.3 }}>{h.symbol}</Typography>
-                      <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', mt: 0.25 }}>
-                        {formatNumber(h.totalShares, 2)} shares
-                      </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flex: 1, minWidth: 0 }}>
+                      <StockLogo symbol={h.symbol} size="md" sx={{ mt: 0.25 }} />
+                      <Box sx={{ minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
+                          <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, lineHeight: 1.3 }}>{h.symbol}</Typography>
+                          {sector !== 'Other' && (
+                            <Chip label={sector} size="small"
+                              sx={{
+                                height: 18, fontSize: '0.5rem', fontWeight: 600,
+                                bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                                color: 'text.secondary', '& .MuiChip-label': { px: 0.75 },
+                              }}
+                            />
+                          )}
+                        </Box>
+                        <Typography sx={{ fontSize: '0.6rem', color: 'text.secondary' }} noWrap>
+                          {getStockName(h.symbol, h.companyName)}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.6rem', color: 'text.secondary', mt: 0.15 }}>
+                          {formatNumber(h.totalShares, 2)} shares · {portfolioPct.toFixed(1)}% of portfolio
+                        </Typography>
+                      </Box>
                     </Box>
                     <Box sx={{ textAlign: 'right', flexShrink: 0, ml: 1.5 }}>
                       <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color, fontFeatureSettings: '"tnum"' }} className="currency">
@@ -440,6 +522,51 @@ export default function PSXDashboard() {
             </motion.div>
           );
         })
+      )}
+
+      {/* ── Sector Distribution ── */}
+      {sectorData.length > 0 && (
+        <>
+          <Typography sx={{ fontSize: isMobile ? '0.7rem' : '0.75rem', fontWeight: 600, letterSpacing: '0.02em', mb: 1, mt: isMobile ? 2 : 2.5 }}>
+            <CategoryRounded sx={{ fontSize: 14, verticalAlign: 'text-bottom', mr: 0.5, opacity: 0.6 }} />
+            Sector Distribution
+          </Typography>
+          <Card>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {sectorData.map((s, i) => {
+                  const barColor = getSectorColor(i);
+                  const pnlColor = getPnLColor(s.pnl);
+                  return (
+                    <Box key={s.sector}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.25 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, minWidth: 0 }}>
+                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: barColor, flexShrink: 0 }} />
+                          <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, lineHeight: 1.2 }} noWrap>
+                            {s.sector}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.6rem', color: 'text.secondary' }}>
+                            ({s.stocks})
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                          <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, fontFeatureSettings: '"tnum"', color: pnlColor }} className="currency">
+                            {formatCurrency(s.currentValue)}
+                          </Typography>
+                          <Chip size="small" label={`${s.pct.toFixed(1)}%`}
+                            sx={{ height: 18, fontSize: '0.55rem', fontWeight: 700, bgcolor: `${barColor}18`, color: barColor, '& .MuiChip-label': { px: 0.5 } }} />
+                        </Box>
+                      </Box>
+                      <Box sx={{ height: 3, borderRadius: 1.5, bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+                        <Box sx={{ height: '100%', width: `${s.pct}%`, bgcolor: barColor, borderRadius: 1.5, transition: 'width 0.6s ease' }} />
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </CardContent>
+          </Card>
+        </>
       )}
     </Box>
   );

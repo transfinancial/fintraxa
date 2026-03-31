@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 
+
 # Build output
 dist/
 dist-ssr/
@@ -34,3 +35,5 @@ Thumbs.db
 
 # Local overrides
 *.local
+Stock Analyzer/
+.github/

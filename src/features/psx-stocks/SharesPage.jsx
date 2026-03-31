@@ -1,20 +1,25 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import {
   Box, Card, CardContent, Typography, TextField, IconButton, Chip, Skeleton,
   Dialog, DialogTitle, DialogContent, DialogActions, Button, InputAdornment,
   ToggleButtonGroup, ToggleButton, useMediaQuery, useTheme, Divider, CircularProgress,
+  Menu, MenuItem, ListItemIcon, ListItemText, Tooltip,
 } from '@mui/material';
 import {
   Search, Refresh, Close, TrendingUp, TrendingDown, LocalFireDepartment,
   StarOutlineRounded, StarRounded, ShowChart, SwapVert,
+  SortRounded, ArrowDropUp, ArrowDropDown, BarChartRounded,
+  FilterListRounded, CheckRounded,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import { psxAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { useAppStore } from '../../store/appStore';
 import { formatCurrency, formatNumber, formatPercent, getPnLColor, calcBrokerFee } from '../../lib/formatters';
+import { getStockSector, getAllSectors } from '../../lib/psxSectors';
+import StockLogo from '../../components/StockLogo';
+import { getStockName } from '../../lib/stockMeta';
 
 const BUY_COLOR = '#15803d';
 const SELL_COLOR = '#b91c1c';
@@ -30,6 +35,8 @@ export default function SharesPage() {
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [sectorFilter, setSectorFilter] = useState('');
+  const [sortBy, setSortBy] = useState('volume');
   const [detailStock, setDetailStock] = useState(null);
   const [scraping, setScraping] = useState(false);
 
@@ -42,6 +49,9 @@ export default function SharesPage() {
   const [tradeFee, setTradeFee] = useState('');
   const [feeEdited, setFeeEdited] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [sortAnchor, setSortAnchor] = useState(null);
+  const [sectorAnchor, setSectorAnchor] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(50);
 
   /* ── Data queries ── */
   const { data: allStocksData, isLoading } = useQuery({
@@ -150,10 +160,39 @@ export default function SharesPage() {
 
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter((s) => s.symbol?.toLowerCase().includes(q));
+      list = list.filter((s) => {
+        const sym = s.symbol?.toUpperCase() || '';
+        return sym.toLowerCase().includes(q) ||
+          (s.company || s.company_name || '').toLowerCase().includes(q) ||
+          getStockName(sym).toLowerCase().includes(q);
+      });
     }
-    return list;
-  }, [filter, allStocksData, gainersData, losersData, activeData, favorites, search]);
+
+    if (sectorFilter) {
+      list = list.filter((s) => getStockSector(s.symbol) === sectorFilter);
+    }
+
+    // Sort
+    const sorted = [...list];
+    switch (sortBy) {
+      case 'price_asc': sorted.sort((a, b) => (a.current || 0) - (b.current || 0)); break;
+      case 'price_desc': sorted.sort((a, b) => (b.current || 0) - (a.current || 0)); break;
+      case 'change_desc': sorted.sort((a, b) => (b.change_pct || b.changePct || 0) - (a.change_pct || a.changePct || 0)); break;
+      case 'change_asc': sorted.sort((a, b) => (a.change_pct || a.changePct || 0) - (b.change_pct || b.changePct || 0)); break;
+      case 'volume': sorted.sort((a, b) => (b.volume || 0) - (a.volume || 0)); break;
+      case 'alpha': sorted.sort((a, b) => (a.symbol || '').localeCompare(b.symbol || '')); break;
+      default: break;
+    }
+    return sorted;
+  }, [filter, allStocksData, gainersData, losersData, activeData, favorites, search, sectorFilter, sortBy]);
+
+  /* Reset pagination when filters change */
+  const prevFilterKey = useRef('');
+  const filterKey = `${filter}-${search}-${sectorFilter}-${sortBy}`;
+  if (filterKey !== prevFilterKey.current) {
+    prevFilterKey.current = filterKey;
+    if (visibleCount !== 50) setVisibleCount(50);
+  }
 
   /* ── Favorite toggle ── */
   const favMutation = useMutation({
@@ -261,6 +300,17 @@ export default function SharesPage() {
     { key: 'favorites', label: 'Favorites', icon: <StarRounded sx={{ fontSize: 14 }} /> },
   ];
 
+  const sortOptions = [
+    { value: 'volume', label: 'Volume' },
+    { value: 'price_desc', label: 'Price ↓' },
+    { value: 'price_asc', label: 'Price ↑' },
+    { value: 'change_desc', label: 'Change ↓' },
+    { value: 'change_asc', label: 'Change ↑' },
+    { value: 'alpha', label: 'A–Z' },
+  ];
+
+  const allSectors = useMemo(() => getAllSectors(), []);
+
   return (
     <Box sx={{ pb: isMobile ? 1 : 0 }}>
       {/* ── Header ── */}
@@ -268,47 +318,50 @@ export default function SharesPage() {
         <Typography sx={{ fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: 800, letterSpacing: '-0.03em' }}>
           Shares
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {allStocksData?.last_scrape && (
-            <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary', fontFeatureSettings: '"tnum"', lineHeight: 1.2, textAlign: 'right' }}>
-              Updated{' '}
-              {(() => {
-                const d = new Date(allStocksData.last_scrape);
-                const now = new Date();
-                const diffMs = now - d;
-                const diffMin = Math.floor(diffMs / 60000);
-                if (diffMin < 1) return 'just now';
-                if (diffMin < 60) return `${diffMin}m ago`;
-                const diffHr = Math.floor(diffMin / 60);
-                if (diffHr < 24) return `${diffHr}h ago`;
-                return d.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' });
-              })()}
-            </Typography>
-          )}
-          <IconButton onClick={handleScrape} disabled={scraping}
-            sx={{
-              border: 1, borderColor: 'divider', borderRadius: 2.5, width: 36, height: 36,
-              animation: scraping ? 'spin 1s linear infinite' : 'none',
-              '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
-            }}>
-            {scraping ? <CircularProgress size={16} sx={{ color: 'text.secondary' }} /> : <Refresh sx={{ fontSize: 18 }} />}
-          </IconButton>
-        </Box>
+        {allStocksData?.last_scrape && (
+          <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary', fontFeatureSettings: '"tnum"', lineHeight: 1.2, textAlign: 'right' }}>
+            Updated{' '}
+            {(() => {
+              const d = new Date(allStocksData.last_scrape);
+              const now = new Date();
+              const diffMs = now - d;
+              const diffMin = Math.floor(diffMs / 60000);
+              if (diffMin < 1) return 'just now';
+              if (diffMin < 60) return `${diffMin}m ago`;
+              const diffHr = Math.floor(diffMin / 60);
+              if (diffHr < 24) return `${diffHr}h ago`;
+              return d.toLocaleDateString('en-PK', { day: 'numeric', month: 'short' });
+            })()}
+          </Typography>
+        )}
       </Box>
 
-      {/* ── Search ── */}
+      {/* ── Search bar with integrated refresh ── */}
       <TextField fullWidth size="small" placeholder="Search by symbol or company..."
         value={search} onChange={(e) => setSearch(e.target.value)} sx={{ mb: 1 }}
-        InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment> }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment>,
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton size="small" onClick={handleScrape} disabled={scraping} sx={{ p: 0.5 }}>
+                {scraping ? <CircularProgress size={14} sx={{ color: 'text.secondary' }} /> : <Refresh sx={{ fontSize: 16 }} />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
       />
 
-      {/* ── Filter Chips ── */}
-      <Box sx={{ display: 'flex', gap: 0.5, mb: 1.25, flexWrap: 'wrap' }}>
+      {/* ── Filter Chips + Sort + Sector (single row, horizontally scrollable) ── */}
+      <Box sx={{
+        display: 'flex', gap: 0.5, mb: 1, alignItems: 'center',
+        overflowX: 'auto', pb: 0.25,
+        '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none',
+      }}>
         {filterChips.map((c) => (
           <Chip key={c.key} label={c.label} icon={c.icon} size="small"
-            onClick={() => setFilter(c.key)}
+            onClick={() => { setFilter(c.key); setSectorFilter(''); }}
             sx={{
-              fontSize: '0.68rem', fontWeight: 600, height: 28,
+              fontSize: '0.65rem', fontWeight: 600, height: 28, flexShrink: 0,
               bgcolor: filter === c.key ? (isDark ? '#fff' : '#111') : 'transparent',
               color: filter === c.key ? (isDark ? '#000' : '#fff') : 'text.secondary',
               border: `1px solid ${filter === c.key ? 'transparent' : (isDark ? '#333' : '#ddd')}`,
@@ -317,264 +370,453 @@ export default function SharesPage() {
             }}
           />
         ))}
+
+        {/* Divider dot */}
+        <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'text.disabled', flexShrink: 0, mx: 0.25 }} />
+
+        {/* Sector chip / active sector chip */}
+        {sectorFilter ? (
+          <Chip label={sectorFilter} size="small"
+            onDelete={() => setSectorFilter('')}
+            sx={{
+              fontSize: '0.65rem', fontWeight: 600, height: 28, flexShrink: 0,
+              bgcolor: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff',
+              '& .MuiChip-deleteIcon': { color: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)', fontSize: 14 },
+            }}
+          />
+        ) : (
+          <Chip label="Sector" size="small"
+            icon={<FilterListRounded sx={{ fontSize: 13 }} />}
+            onClick={(e) => setSectorAnchor(e.currentTarget)}
+            sx={{
+              fontSize: '0.65rem', fontWeight: 600, height: 28, flexShrink: 0,
+              bgcolor: 'transparent', color: 'text.secondary',
+              border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+              '& .MuiChip-icon': { color: 'text.secondary' },
+            }}
+          />
+        )}
+
+        {/* Sort button */}
+        <Tooltip title="Sort">
+          <IconButton size="small" onClick={(e) => setSortAnchor(e.currentTarget)}
+            sx={{
+              flexShrink: 0, ml: 'auto',
+              border: `1px solid ${isDark ? '#333' : '#ddd'}`, borderRadius: 2,
+              width: 28, height: 28,
+            }}>
+            <SortRounded sx={{ fontSize: 15, color: 'text.secondary' }} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
-      <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary', mb: 1 }}>
+      {/* Sort popover menu */}
+      <Menu anchorEl={sortAnchor} open={Boolean(sortAnchor)} onClose={() => setSortAnchor(null)}
+        slotProps={{ paper: { sx: { minWidth: 140, borderRadius: 2.5 } } }}>
+        {sortOptions.map((o) => (
+          <MenuItem key={o.value} selected={sortBy === o.value}
+            onClick={() => { setSortBy(o.value); setSortAnchor(null); }}
+            sx={{ fontSize: '0.72rem', py: 0.75, gap: 1 }}>
+            {sortBy === o.value && <CheckRounded sx={{ fontSize: 14, color: 'primary.main' }} />}
+            <ListItemText primaryTypographyProps={{ fontSize: '0.72rem', fontWeight: sortBy === o.value ? 700 : 400 }}>{o.label}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {/* Sector popover menu */}
+      <Menu anchorEl={sectorAnchor} open={Boolean(sectorAnchor)} onClose={() => setSectorAnchor(null)}
+        slotProps={{ paper: { sx: { maxHeight: 320, minWidth: 180, borderRadius: 2.5 } } }}>
+        <MenuItem onClick={() => { setSectorFilter(''); setSectorAnchor(null); }}
+          sx={{ fontSize: '0.72rem', py: 0.75, fontWeight: !sectorFilter ? 700 : 400 }}>
+          All Sectors
+        </MenuItem>
+        {allSectors.map((s) => (
+          <MenuItem key={s} selected={sectorFilter === s}
+            onClick={() => { setSectorFilter(s); setSectorAnchor(null); }}
+            sx={{ fontSize: '0.72rem', py: 0.75, gap: 1 }}>
+            {sectorFilter === s && <CheckRounded sx={{ fontSize: 14, color: 'primary.main' }} />}
+            <ListItemText primaryTypographyProps={{ fontSize: '0.72rem', fontWeight: sectorFilter === s ? 700 : 400 }}>{s}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+
+      <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mb: 1.25, fontFeatureSettings: '"tnum"' }}>
         {displayStocks.length} share{displayStocks.length !== 1 ? 's' : ''}
+        {sectorFilter && <> in <b>{sectorFilter}</b></>}
       </Typography>
 
       {/* ── Stock List ── */}
       {isLoading ? (
-        Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} variant="rounded" height={56} sx={{ mb: 0.75 }} />)
+        Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} variant="rounded" height={82} sx={{ mb: 1 }} />)
       ) : displayStocks.length === 0 ? (
         <Card sx={{ p: 4, textAlign: 'center' }}>
-          <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>No shares found</Typography>
+          <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>No shares found</Typography>
         </Card>
       ) : (
-        displayStocks.map((stock, i) => {
+        <>
+        {displayStocks.slice(0, visibleCount).map((stock, i) => {
           const sym = stock.symbol?.toUpperCase();
           const isFav = favorites.includes(sym);
           const change = stock.change || 0;
           const changePct = stock.change_pct || stock.changePct || 0;
           const color = getPnLColor(change);
+          const sector = getStockSector(sym);
+          const companyName = getStockName(sym, stock.company || stock.company_name);
           return (
-            <motion.div key={sym || i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.3) }}>
-              <Card sx={{ mb: 0.5, cursor: 'pointer', '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' } }}
+              <Card key={sym || i} sx={{ mb: 0.75, cursor: 'pointer', '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' } }}
                 onClick={() => openDetail(stock)}>
-                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, lineHeight: 1.2 }} noWrap>{sym}</Typography>
+                <CardContent sx={{ p: isMobile ? 1.5 : 2, '&:last-child': { pb: isMobile ? 1.5 : 2 } }}>
+                  {/* Top row: logo + symbol + price + fav */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                    <StockLogo symbol={sym} size="md" sx={{ mt: 0.25 }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Typography sx={{ fontSize: '0.92rem', fontWeight: 700, lineHeight: 1.2 }}>{sym}</Typography>
+                        {sector !== 'Other' && (
+                          <Chip label={sector} size="small"
+                            sx={{
+                              height: 18, fontSize: '0.55rem', fontWeight: 600,
+                              bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                              color: 'text.secondary',
+                              '& .MuiChip-label': { px: 0.75 },
+                            }}
+                          />
+                        )}
+                      </Box>
+                      {companyName && companyName !== sym && (
+                        <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary', lineHeight: 1.3, mt: 0.2 }} noWrap>
+                          {companyName}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                      <Typography sx={{ fontSize: '0.95rem', fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
+                        {formatNumber(stock.current, 2)}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color, fontFeatureSettings: '"tnum"', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.15 }}>
+                        {change >= 0 ? <ArrowDropUp sx={{ fontSize: 16 }} /> : <ArrowDropDown sx={{ fontSize: 16 }} />}
+                        {Math.abs(change).toFixed(2)} ({changePct >= 0 ? '+' : ''}{Number(changePct).toFixed(2)}%)
+                      </Typography>
+                    </Box>
+                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); favMutation.mutate(sym); }}
+                      sx={{ color: isFav ? '#eab308' : 'text.secondary', ml: -0.25, mt: -0.25 }}>
+                      {isFav ? <StarRounded sx={{ fontSize: 20 }} /> : <StarOutlineRounded sx={{ fontSize: 20 }} />}
+                    </IconButton>
                   </Box>
-                  <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, fontFeatureSettings: '"tnum"' }}>
-                      {formatNumber(stock.current, 2)}
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.62rem', fontWeight: 600, color, fontFeatureSettings: '"tnum"' }}>
-                      {change >= 0 ? '+' : ''}{formatNumber(change, 2)} ({changePct >= 0 ? '+' : ''}{Number(changePct).toFixed(2)}%)
-                    </Typography>
+
+                  {/* Bottom row: OHLC + Volume mini stats */}
+                  <Box sx={{
+                    display: 'flex', gap: isMobile ? 1.5 : 2, mt: 1,
+                    flexWrap: 'wrap',
+                  }}>
+                    {[
+                      { label: 'Open', val: stock.open },
+                      { label: 'High', val: stock.high, color: '#22c55e' },
+                      { label: 'Low', val: stock.low, color: '#ef4444' },
+                      { label: 'LDCP', val: stock.ldcp },
+                      { label: 'Vol', val: stock.volume, fmt: 'vol' },
+                    ].map((item) => (
+                      <Box key={item.label} sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500, lineHeight: 1 }}>
+                          {item.label}
+                        </Typography>
+                        <Typography sx={{
+                          fontSize: '0.72rem', fontWeight: 600, fontFeatureSettings: '"tnum"', lineHeight: 1.4,
+                          color: item.color || 'text.primary',
+                        }}>
+                          {item.fmt === 'vol'
+                            ? (item.val >= 1e6 ? `${(item.val / 1e6).toFixed(1)}M` : item.val >= 1e3 ? `${(item.val / 1e3).toFixed(0)}K` : formatNumber(item.val || 0, 0))
+                            : formatNumber(item.val || 0, 2)
+                          }
+                        </Typography>
+                      </Box>
+                    ))}
                   </Box>
-                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); favMutation.mutate(sym); }}
-                    sx={{ color: isFav ? '#eab308' : 'text.secondary', ml: 0.25 }}>
-                    {isFav ? <StarRounded sx={{ fontSize: 18 }} /> : <StarOutlineRounded sx={{ fontSize: 18 }} />}
-                  </IconButton>
                 </CardContent>
               </Card>
-            </motion.div>
           );
-        })
+        })}
+        {visibleCount < displayStocks.length && (
+          <Button fullWidth onClick={() => setVisibleCount((c) => c + 50)}
+            sx={{ mt: 1, mb: 1, borderRadius: 2.5, py: 1, fontWeight: 600, fontSize: '0.78rem', textTransform: 'none', color: 'primary.main' }}>
+            Load more ({displayStocks.length - visibleCount} remaining)
+          </Button>
+        )}
+        </>
       )}
 
-      {/* ─────── Stock Detail / Trade Dialog ─────── */}
+      {/* ─────── Modern Trade Dialog ─────── */}
       <Dialog open={Boolean(detailStock)} onClose={() => setDetailStock(null)} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { borderRadius: 4, mx: isMobile ? 1.5 : 'auto', my: isMobile ? 2 : 'auto', maxHeight: isMobile ? 'calc(100dvh - 32px)' : undefined } }}>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 600, fontSize: '0.9rem', pb: 1 }}>
-          {detailStock?.symbol}
-          <IconButton onClick={() => setDetailStock(null)} size="small"><Close sx={{ fontSize: 18 }} /></IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ px: isMobile ? 2 : 3 }}>
-          {detailStock && (
-            <>
-              {/* Stock info */}
-              <Box sx={{ mb: 2 }}>
-                <Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>{detailStock.symbol}</Typography>
-                <Typography sx={{ fontSize: '0.72rem', color: getPnLColor(detailStock.change || 0), fontWeight: 600 }}>
-                  {formatNumber(detailStock.current, 2)} ({detailStock.change >= 0 ? '+' : ''}{formatNumber(detailStock.change || 0, 2)})
+        PaperProps={{ sx: { borderRadius: 4, mx: isMobile ? 1.5 : 'auto', my: isMobile ? 2 : 'auto', maxHeight: isMobile ? 'calc(100dvh - 32px)' : undefined, overflow: 'hidden', '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none' } }}>
+        {detailStock && (
+          <>
+            {/* ── Hero Header ── */}
+            <Box sx={{
+              px: isMobile ? 2 : 3, pt: 2.5, pb: 2, position: 'relative',
+              bgcolor: tradeMode === 'buy' ? (isDark ? 'rgba(21,128,61,0.08)' : 'rgba(21,128,61,0.04)') : (isDark ? 'rgba(185,28,28,0.08)' : 'rgba(185,28,28,0.04)'),
+              borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+              transition: 'background-color 0.3s ease',
+            }}>
+              <IconButton onClick={() => setDetailStock(null)} size="small"
+                sx={{ position: 'absolute', top: 10, right: 10, color: 'text.secondary' }}>
+                <Close sx={{ fontSize: 18 }} />
+              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+                <StockLogo symbol={detailStock.symbol} size="lg" />
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Typography sx={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '-0.02em' }}>{detailStock.symbol}</Typography>
+                    {getStockSector(detailStock.symbol) !== 'Other' && (
+                      <Chip label={getStockSector(detailStock.symbol)} size="small"
+                        sx={{ height: 18, fontSize: '0.5rem', fontWeight: 600, bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', color: 'text.secondary', '& .MuiChip-label': { px: 0.75 } }} />
+                    )}
+                  </Box>
+                  <Typography sx={{ fontSize: '0.62rem', color: 'text.secondary' }}>
+                    {getStockName(detailStock.symbol, detailStock.company || detailStock.company_name)}
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, fontFeatureSettings: '"tnum"', lineHeight: 1 }}>{formatNumber(detailStock.current, 2)}</Typography>
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: getPnLColor(detailStock.change || 0), fontFeatureSettings: '"tnum"' }}>
+                  {detailStock.change >= 0 ? '+' : ''}{formatNumber(detailStock.change || 0, 2)} ({detailStock.change_pct >= 0 ? '+' : ''}{Number(detailStock.change_pct || 0).toFixed(2)}%)
                 </Typography>
               </Box>
+              {/* OHLC inline chips */}
+              <Box sx={{ display: 'flex', gap: 0.75, mt: 1, flexWrap: 'wrap' }}>
+                {[
+                  { label: 'O', val: detailStock.open },
+                  { label: 'H', val: detailStock.high, color: '#22c55e' },
+                  { label: 'L', val: detailStock.low, color: '#ef4444' },
+                  { label: 'LDCP', val: detailStock.ldcp },
+                  ...(detailStock.volume > 0 ? [{ label: 'Vol', val: detailStock.volume, fmt: 'vol' }] : []),
+                ].map((item) => (
+                  <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                    <Typography sx={{ fontSize: '0.5rem', color: 'text.secondary', fontWeight: 500, textTransform: 'uppercase' }}>{item.label}</Typography>
+                    <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, fontFeatureSettings: '"tnum"', color: item.color || 'text.primary' }}>
+                      {item.fmt === 'vol' ? (item.val >= 1e6 ? `${(item.val / 1e6).toFixed(1)}M` : item.val >= 1e3 ? `${(item.val / 1e3).toFixed(0)}K` : formatNumber(item.val || 0, 0)) : formatNumber(item.val || 0, 2)}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
 
-              {/* My info */}
-              <Box sx={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2, p: 1.5, borderRadius: 2,
-                bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
-              }}>
-                <Box>
-                  <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.03em', fontWeight: 500 }}>Free Cash</Typography>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, fontFeatureSettings: '"tnum"' }} className="currency">{formatCurrency(freeCash)}</Typography>
+            <DialogContent sx={{ px: isMobile ? 2 : 3, pt: 2 }}>
+              {/* ── Account info bar ── */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
+                <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: isDark ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.03)', border: '1px solid', borderColor: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.08)' }}>
+                  <Typography sx={{ fontSize: '0.48rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Free Cash</Typography>
+                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, fontFeatureSettings: '"tnum"', color: '#22c55e' }} className="currency">{formatCurrency(freeCash)}</Typography>
                 </Box>
-                <Box>
-                  <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.03em', fontWeight: 500 }}>My Shares</Typography>
+                <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)', border: '1px solid', borderColor: 'divider' }}>
+                  <Typography sx={{ fontSize: '0.48rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>My Shares</Typography>
                   <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, fontFeatureSettings: '"tnum"' }}>{formatNumber(myHolding.shares, 2)}</Typography>
                 </Box>
               </Box>
 
-              <Divider sx={{ mb: 2 }} />
-
-              {/* Buy / Sell toggle */}
+              {/* ── Buy / Sell toggle ── */}
               <ToggleButtonGroup exclusive fullWidth size="small" value={tradeMode} onChange={(_, v) => { if (v) setTradeMode(v); }}
-                sx={{ mb: 2, '& .MuiToggleButton-root': { fontWeight: 700, fontSize: '0.75rem', py: 0.8, textTransform: 'none', border: '1px solid', borderColor: 'divider', '&.Mui-selected': { bgcolor: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR, color: '#fff', '&:hover': { bgcolor: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR } } } }}>
+                sx={{
+                  mb: 2, borderRadius: 3, overflow: 'hidden', border: 'none',
+                  '& .MuiToggleButton-root': {
+                    fontWeight: 700, fontSize: '0.78rem', py: 0.9, textTransform: 'none',
+                    border: 'none', borderRadius: '12px !important',
+                    '&.Mui-selected': { bgcolor: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR, color: '#fff', '&:hover': { bgcolor: tradeMode === 'buy' ? '#166534' : '#991b1b' } },
+                    '&:not(.Mui-selected)': { bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' },
+                  },
+                }}>
                 <ToggleButton value="buy">Buy</ToggleButton>
                 <ToggleButton value="sell">Sell</ToggleButton>
               </ToggleButtonGroup>
 
-              {/* Price */}
+              {/* ── Price with quick-adjust ── */}
               <TextField fullWidth size="small" label="Price per share" type="number"
-                value={tradePrice} onChange={(e) => setTradePrice(e.target.value)} sx={{ mb: 1.5 }}
+                value={tradePrice} onChange={(e) => setTradePrice(e.target.value)}
+                error={tradePrice !== '' && Number(tradePrice) <= 0}
+                helperText={tradePrice !== '' && Number(tradePrice) <= 0 ? 'Price must be greater than 0' : ''}
+                sx={{ mb: 0.75 }}
                 InputProps={{ startAdornment: <InputAdornment position="start">Rs</InputAdornment> }} />
+              <Box sx={{ display: 'flex', gap: 0.5, mb: 2 }}>
+                {[
+                  { label: '-1%', fn: () => setTradePrice(String((Number(tradePrice) * 0.99).toFixed(2))) },
+                  { label: 'Market', fn: () => setTradePrice(String(detailStock.current || '')) },
+                  { label: '+1%', fn: () => setTradePrice(String((Number(tradePrice) * 1.01).toFixed(2))) },
+                ].map((btn) => (
+                  <Chip key={btn.label} label={btn.label} size="small" onClick={btn.fn}
+                    sx={{ fontSize: '0.55rem', fontWeight: 600, height: 22, bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', '& .MuiChip-label': { px: 0.75 } }} />
+                ))}
+              </Box>
 
-              {/* Input mode toggle */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                <Chip label="By Shares" size="small"
-                  onClick={() => { setTradeInputMode('shares'); setTradeAmount(''); }}
-                  sx={{
-                    fontSize: '0.65rem', fontWeight: 600, height: 26,
-                    bgcolor: tradeInputMode === 'shares' ? (isDark ? '#fff' : '#111') : 'transparent',
-                    color: tradeInputMode === 'shares' ? (isDark ? '#000' : '#fff') : 'text.secondary',
-                    border: `1px solid ${tradeInputMode === 'shares' ? 'transparent' : (isDark ? '#333' : '#ddd')}`,
-                  }} />
-                <Chip label="By Amount" size="small"
-                  onClick={() => { setTradeInputMode('amount'); setTradeQty(''); }}
-                  sx={{
-                    fontSize: '0.65rem', fontWeight: 600, height: 26,
-                    bgcolor: tradeInputMode === 'amount' ? (isDark ? '#fff' : '#111') : 'transparent',
-                    color: tradeInputMode === 'amount' ? (isDark ? '#000' : '#fff') : 'text.secondary',
-                    border: `1px solid ${tradeInputMode === 'amount' ? 'transparent' : (isDark ? '#333' : '#ddd')}`,
-                  }} />
-                <SwapVert sx={{ fontSize: 16, color: 'text.secondary', ml: 'auto' }} />
+              {/* ── Input mode toggle ── */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.25 }}>
+                {[{ key: 'shares', label: 'By Shares' }, { key: 'amount', label: 'By Amount' }].map((m) => (
+                  <Chip key={m.key} label={m.label} size="small"
+                    onClick={() => { setTradeInputMode(m.key); if (m.key === 'shares') setTradeAmount(''); else setTradeQty(''); }}
+                    sx={{
+                      fontSize: '0.6rem', fontWeight: 600, height: 24,
+                      bgcolor: tradeInputMode === m.key ? (isDark ? '#fff' : '#111') : 'transparent',
+                      color: tradeInputMode === m.key ? (isDark ? '#000' : '#fff') : 'text.secondary',
+                      border: `1px solid ${tradeInputMode === m.key ? 'transparent' : (isDark ? '#333' : '#ddd')}`,
+                    }} />
+                ))}
               </Box>
 
               {tradeInputMode === 'shares' ? (
-                <TextField fullWidth size="small" label="Number of shares" type="number"
-                  value={tradeQty} onChange={(e) => setTradeQty(e.target.value)} sx={{ mb: 1.5 }}
-                  inputProps={{ step: '0.01' }}
-                  InputProps={{ endAdornment: <InputAdornment position="end">shares</InputAdornment> }} />
+                <Box sx={{ display: 'flex', gap: 0.75, mb: 1.5, alignItems: 'flex-end' }}>
+                  <TextField fullWidth size="small" label="Number of shares" type="number"
+                    value={tradeQty} onChange={(e) => setTradeQty(e.target.value)}
+                    inputProps={{ step: '0.01' }}
+                    InputProps={{ endAdornment: <InputAdornment position="end">shares</InputAdornment> }} />
+                  <Tooltip title={tradeMode === 'sell' ? `${formatNumber(myHolding.shares, 2)} shares` : Number(tradePrice) > 0 ? `${Math.floor(freeCash / Number(tradePrice))} shares` : 'Enter price first'} arrow>
+                    <Chip label="Max" size="small" onClick={() => {
+                      if (tradeMode === 'sell') setTradeQty(String(myHolding.shares));
+                      else if (Number(tradePrice) > 0) setTradeQty(String(Math.floor(freeCash / Number(tradePrice))));
+                    }}
+                      sx={{ fontSize: '0.55rem', fontWeight: 700, height: 32, bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', flexShrink: 0 }} />
+                  </Tooltip>
+                </Box>
               ) : (
-                <TextField fullWidth size="small" label="Total amount" type="number"
-                  value={tradeAmount} onChange={(e) => setTradeAmount(e.target.value)} sx={{ mb: 1.5 }}
-                  InputProps={{ startAdornment: <InputAdornment position="start">Rs</InputAdornment> }} />
+                <Box sx={{ display: 'flex', gap: 0.75, mb: 1.5, alignItems: 'flex-end' }}>
+                  <TextField fullWidth size="small" label="Total amount" type="number"
+                    value={tradeAmount} onChange={(e) => setTradeAmount(e.target.value)}
+                    InputProps={{ startAdornment: <InputAdornment position="start">Rs</InputAdornment> }} />
+                  <Tooltip title={tradeMode === 'sell' ? `Rs ${formatNumber(Math.round(myHolding.shares * (Number(tradePrice) || 0)), 0)}` : `Rs ${formatNumber(Math.floor(freeCash), 0)}`} arrow>
+                    <Chip label="Max" size="small" onClick={() => {
+                      if (tradeMode === 'sell') setTradeAmount(String(Math.round(myHolding.shares * (Number(tradePrice) || 0))));
+                      else setTradeAmount(String(Math.floor(freeCash)));
+                    }}
+                      sx={{ fontSize: '0.55rem', fontWeight: 700, height: 32, bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', flexShrink: 0 }} />
+                  </Tooltip>
+                </Box>
               )}
 
-              {/* Live calculation */}
+              {/* ── Cost breakdown ── */}
               <Box sx={{
-                p: 1.5, borderRadius: 2, mb: 1,
+                p: 1.5, borderRadius: 2.5, mb: 1,
                 bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
-                border: '1px solid', borderColor: 'divider',
+                border: '1.5px solid', borderColor: tradeMode === 'buy' ? `${BUY_COLOR}25` : `${SELL_COLOR}25`,
               }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary' }}>Shares</Typography>
-                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, fontFeatureSettings: '"tnum"' }}>{formatNumber(computedShares, 2)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary' }}>Price</Typography>
-                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, fontFeatureSettings: '"tnum"' }}>Rs {formatNumber(Number(tradePrice) || 0, 2)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary' }}>Subtotal</Typography>
-                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, fontFeatureSettings: '"tnum"' }}>Rs {formatNumber(computedAmount, 2)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                  <Typography sx={{ fontSize: '0.68rem', color: 'text.secondary' }}>Broker Fee</Typography>
+                {[
+                  { label: 'Shares', value: formatNumber(computedShares, 2) },
+                  { label: 'Price', value: `Rs ${formatNumber(Number(tradePrice) || 0, 2)}` },
+                  { label: 'Subtotal', value: `Rs ${formatNumber(computedAmount, 2)}` },
+                ].map((row) => (
+                  <Box key={row.label} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.4 }}>
+                    <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>{row.label}</Typography>
+                    <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, fontFeatureSettings: '"tnum"' }}>{row.value}</Typography>
+                  </Box>
+                ))}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.4 }}>
+                  <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>Broker Fee{computedAmount > 0 && ` (${(effectiveFee / computedAmount * 100).toFixed(2)}%)`}</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <TextField
-                      size="small" type="number"
+                    <TextField size="small" type="number"
                       value={feeEdited ? tradeFee : String(autoFee)}
                       onChange={(e) => { setTradeFee(e.target.value); setFeeEdited(true); }}
-                      sx={{
-                        width: 90,
-                        '& .MuiOutlinedInput-root': { height: 24, fontSize: '0.7rem', fontWeight: 700, fontFeatureSettings: '"tnum"' },
-                        '& .MuiOutlinedInput-input': { px: 0.75, py: 0, textAlign: 'right' },
-                      }}
-                      InputProps={{ startAdornment: <InputAdornment position="start" sx={{ '& .MuiTypography-root': { fontSize: '0.65rem' } }}>Rs</InputAdornment> }}
-                    />
+                      sx={{ width: 85, '& .MuiOutlinedInput-root': { height: 22, fontSize: '0.65rem', fontWeight: 700, fontFeatureSettings: '"tnum"' }, '& .MuiOutlinedInput-input': { px: 0.5, py: 0, textAlign: 'right' } }}
+                      InputProps={{ startAdornment: <InputAdornment position="start" sx={{ '& .MuiTypography-root': { fontSize: '0.6rem' } }}>Rs</InputAdornment> }} />
                     {feeEdited && (
-                      <Typography
-                        onClick={() => { setFeeEdited(false); setTradeFee(''); }}
-                        sx={{ fontSize: '0.55rem', color: 'primary.main', cursor: 'pointer', textDecoration: 'underline', flexShrink: 0 }}>
-                        reset
-                      </Typography>
+                      <Typography onClick={() => { setFeeEdited(false); setTradeFee(''); }}
+                        sx={{ fontSize: '0.5rem', color: 'primary.main', cursor: 'pointer', textDecoration: 'underline', flexShrink: 0 }}>reset</Typography>
                     )}
                   </Box>
                 </Box>
-                <Divider sx={{ my: 0.5 }} />
+                <Divider sx={{ my: 0.75 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 700 }}>{tradeMode === 'buy' ? 'Total Cost' : 'Net Received'}</Typography>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR, fontFeatureSettings: '"tnum"' }}>
-                    Rs {formatNumber(totalWithFee, 2)}
-                  </Typography>
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 700 }}>{tradeMode === 'buy' ? 'Total Cost' : 'Net Received'}</Typography>
+                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR, fontFeatureSettings: '"tnum"' }}>Rs {formatNumber(totalWithFee, 2)}</Typography>
                 </Box>
               </Box>
 
               {tradeMode === 'buy' && totalWithFee > freeCash && totalWithFee > 0 && (
-                <Typography sx={{ fontSize: '0.62rem', color: '#b91c1c', mb: 1 }}>
-                  Insufficient free cash (available: {formatCurrency(freeCash)})
-                </Typography>
+                <Typography sx={{ fontSize: '0.6rem', color: '#b91c1c', mb: 0.5 }}>Insufficient free cash (available: {formatCurrency(freeCash)})</Typography>
               )}
               {tradeMode === 'sell' && computedShares > myHolding.shares && computedShares > 0 && (
-                <Typography sx={{ fontSize: '0.62rem', color: '#b91c1c', mb: 1 }}>
-                  Insufficient shares (you hold: {formatNumber(myHolding.shares, 2)})
-                </Typography>
+                <Typography sx={{ fontSize: '0.6rem', color: '#b91c1c', mb: 0.5 }}>Insufficient shares (you hold: {formatNumber(myHolding.shares, 2)})</Typography>
               )}
-            </>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
-          <Button onClick={() => setDetailStock(null)} color="inherit"
-            sx={{ flex: 1, fontSize: '0.8rem', borderRadius: 2.5, py: 1.1, fontWeight: 600, bgcolor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f5f5' }}>
-            Cancel
-          </Button>
-          <Button disabled={!canTrade || tradeMutation.isPending}
-            onClick={() => setConfirmOpen(true)}
-            variant="contained"
-            sx={{
-              flex: 1, fontSize: '0.8rem', borderRadius: 2.5, py: 1.1, fontWeight: 600,
-              bgcolor: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR,
-              color: '#fff',
-              '&:hover': { bgcolor: tradeMode === 'buy' ? '#166534' : '#991b1b' },
-              '&.Mui-disabled': { bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' },
-            }}>
-            {tradeMode === 'buy' ? 'Buy' : 'Sell'}
-          </Button>
-        </DialogActions>
+            </DialogContent>
+
+            <DialogActions sx={{ px: isMobile ? 2 : 3, pb: 2.5, pt: 1 }}>
+              <Button disabled={!canTrade || tradeMutation.isPending}
+                fullWidth onClick={() => setConfirmOpen(true)}
+                variant="contained"
+                sx={{
+                  fontSize: '0.82rem', borderRadius: 3, py: 1.2, fontWeight: 700,
+                  bgcolor: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR, color: '#fff',
+                  '&:hover': { bgcolor: tradeMode === 'buy' ? '#166534' : '#991b1b' },
+                  '&.Mui-disabled': { bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' },
+                }}>
+                {canTrade ? `${tradeMode === 'buy' ? 'Buy' : 'Sell'} · Rs ${formatNumber(totalWithFee, 0)}` : (tradeMode === 'buy' ? 'Buy' : 'Sell')}
+              </Button>
+            </DialogActions>
+          </>
+        )}
       </Dialog>
 
-      {/* ─────── Confirmation Dialog ─────── */}
+      {/* ─────── Confirmation Dialog (bottom-sheet style on mobile) ─────── */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { borderRadius: 4 } }}>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '0.95rem', textAlign: 'center', pb: 0.5 }}>
-          Confirm {tradeMode === 'buy' ? 'Purchase' : 'Sale'}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ textAlign: 'center', py: 1 }}>
-            <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', letterSpacing: '0.04em', textTransform: 'uppercase', mb: 0.5 }}>
-              {tradeMode === 'buy' ? 'Buying' : 'Selling'}
-            </Typography>
-            <Typography sx={{ fontSize: '1.3rem', fontWeight: 800, color: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR }}>
-              {formatNumber(computedShares, 2)} shares
-            </Typography>
-            <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: 'text.secondary', mt: 0.25 }}>
-              of {detailStock?.symbol} @ Rs {formatNumber(Number(tradePrice) || 0, 2)}
-            </Typography>
-
-            <Divider sx={{ my: 2 }} />
-
-            {[
-              ['Subtotal', `Rs ${formatNumber(computedAmount, 2)}`],
-              ['Broker Fee', `${tradeMode === 'sell' ? '−' : '+'}Rs ${formatNumber(effectiveFee, 2)}`],
-              [tradeMode === 'buy' ? 'Total Cost' : 'Net Received', `Rs ${formatNumber(totalWithFee, 2)}`],
-              ['Price per Share', `Rs ${formatNumber(Number(tradePrice) || 0, 2)}`],
-              ['Quantity', `${formatNumber(computedShares, 2)} shares`],
-            ].map(([k, v]) => (
-              <Box key={k} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
-                <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>{k}</Typography>
-                <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, fontFeatureSettings: '"tnum"' }}>{v}</Typography>
+        PaperProps={{ sx: {
+          borderRadius: isMobile ? '20px 20px 0 0' : 4,
+          ...(isMobile && { position: 'fixed', bottom: 0, m: 0, maxHeight: '70dvh', overflow: 'auto', '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none' }),
+        } }}>
+        {detailStock && (
+          <>
+            <Box sx={{ textAlign: 'center', pt: 3, pb: 1, px: 3 }}>
+              {/* Visual icon */}
+              <Box sx={{
+                width: 48, height: 48, borderRadius: '50%', mx: 'auto', mb: 1.5,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                bgcolor: tradeMode === 'buy' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+              }}>
+                {tradeMode === 'buy'
+                  ? <TrendingUp sx={{ fontSize: 24, color: BUY_COLOR }} />
+                  : <TrendingDown sx={{ fontSize: 24, color: SELL_COLOR }} />}
               </Box>
-            ))}
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit"
-            sx={{ flex: 1, fontSize: '0.8rem', borderRadius: 2.5, py: 1.1, fontWeight: 600, bgcolor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f5f5' }}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmTrade} disabled={tradeMutation.isPending}
-            variant="contained"
-            sx={{
-              flex: 1, fontSize: '0.8rem', borderRadius: 2.5, py: 1.1, fontWeight: 600,
-              bgcolor: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff',
-              '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.85)' },
-            }}>
-            {tradeMutation.isPending ? <CircularProgress size={18} sx={{ color: isDark ? '#000' : '#fff' }} /> : 'Confirm'}
-          </Button>
-        </DialogActions>
+              <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500, mb: 0.5 }}>
+                {tradeMode === 'buy' ? 'Buying' : 'Selling'}
+              </Typography>
+              <Typography sx={{ fontSize: '1.3rem', fontWeight: 800, color: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR }}>
+                {formatNumber(computedShares, 2)} shares
+              </Typography>
+              <Typography sx={{ fontSize: '0.78rem', fontWeight: 600, color: 'text.secondary', mt: 0.25 }}>
+                of {detailStock.symbol} @ Rs {formatNumber(Number(tradePrice) || 0, 2)}
+              </Typography>
+            </Box>
+
+            <DialogContent sx={{ px: 3, pt: 1.5, pb: 0 }}>
+              <Box sx={{ p: 1.5, borderRadius: 2.5, bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' }}>
+                {[
+                  { label: 'Subtotal', value: `Rs ${formatNumber(computedAmount, 2)}` },
+                  { label: `Broker Fee${computedAmount > 0 ? ` (${(effectiveFee / computedAmount * 100).toFixed(2)}%)` : ''}`, value: `${tradeMode === 'sell' ? '−' : '+'}Rs ${formatNumber(effectiveFee, 2)}` },
+                  { label: tradeMode === 'buy' ? 'Total Cost' : 'Net Received', value: `Rs ${formatNumber(totalWithFee, 2)}`, bold: true },
+                ].map((row, i) => (
+                  <Box key={row.label}>
+                    {i === 2 && <Divider sx={{ my: 0.75 }} />}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.35 }}>
+                      <Typography sx={{ fontSize: '0.68rem', color: row.bold ? 'text.primary' : 'text.secondary', fontWeight: row.bold ? 700 : 400 }}>{row.label}</Typography>
+                      <Typography sx={{ fontSize: row.bold ? '0.92rem' : '0.68rem', fontWeight: row.bold ? 800 : 600, fontFeatureSettings: '"tnum"', color: row.bold ? (tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR) : 'text.primary' }}>{row.value}</Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, pb: 2.5, pt: 2, gap: 1 }}>
+              <Button onClick={() => setConfirmOpen(false)} variant="text" color="inherit"
+                sx={{ flex: 0.8, fontSize: '0.78rem', borderRadius: 3, py: 1.1, fontWeight: 600 }}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmTrade} disabled={tradeMutation.isPending}
+                variant="contained"
+                sx={{
+                  flex: 1.2, fontSize: '0.82rem', borderRadius: 3, py: 1.2, fontWeight: 700,
+                  bgcolor: tradeMode === 'buy' ? BUY_COLOR : SELL_COLOR, color: '#fff',
+                  '&:hover': { bgcolor: tradeMode === 'buy' ? '#166534' : '#991b1b' },
+                }}>
+                {tradeMutation.isPending ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : `Confirm ${tradeMode === 'buy' ? 'Buy' : 'Sell'}`}
+              </Button>
+            </DialogActions>
+          </>
+        )}
       </Dialog>
     </Box>
   );

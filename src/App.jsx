@@ -21,6 +21,8 @@ const PSXSection = lazy(() => import('./features/psx-stocks/PSXSection'));
 const SharesPage = lazy(() => import('./features/psx-stocks/SharesPage'));
 const StockTransactions = lazy(() => import('./features/psx-stocks/StockTransactions'));
 const StockAnalytics = lazy(() => import('./features/psx-stocks/Analytics'));
+const StockResearch = lazy(() => import('./features/psx-stocks/Research'));
+const StockTools = lazy(() => import('./features/psx-stocks/Tools'));
 
 const Loader = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -72,6 +74,8 @@ export default function App() {
           <Route path="stocks/shares" element={<Suspense fallback={<Loader />}><SharesPage /></Suspense>} />
           <Route path="stocks/transactions" element={<Suspense fallback={<Loader />}><StockTransactions /></Suspense>} />
           <Route path="stocks/analytics" element={<Suspense fallback={<Loader />}><StockAnalytics /></Suspense>} />
+          <Route path="stocks/research" element={<Suspense fallback={<Loader />}><StockResearch /></Suspense>} />
+          <Route path="stocks/tools" element={<Suspense fallback={<Loader />}><StockTools /></Suspense>} />
         </Route>
       </Routes>
 

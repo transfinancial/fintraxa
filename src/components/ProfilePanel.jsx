@@ -170,7 +170,7 @@ export default function ProfilePanel({ open, onClose }) {
           </IconButton>
         </Box>
 
-        <Box sx={{ flex: 1, overflowY: 'auto', px: 2.5, py: 3 }}>
+        <Box sx={{ flex: 1, overflowY: 'auto', px: 2.5, py: 3, '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none' }}>
           {/* Avatar + Name */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <Box sx={{ textAlign: 'center', mb: 3 }}>
@@ -485,6 +485,7 @@ export default function ProfilePanel({ open, onClose }) {
           <Box sx={{
             display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.75, mb: 1,
             maxHeight: 180, overflowY: 'auto', p: 0.5,
+            '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none',
           }}>
             {Object.entries(ICON_OPTIONS).map(([name, Comp]) => (
               <Box
