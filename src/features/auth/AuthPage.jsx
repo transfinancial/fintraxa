@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box, TextField, Button, Typography, Alert, CircularProgress,
   InputAdornment, IconButton, useMediaQuery, Checkbox, FormControlLabel,
@@ -14,6 +14,9 @@ import {
   ShieldRounded as SecurityIcon,
   CheckCircleOutlineRounded as CheckIcon,
   RadioButtonUncheckedRounded as UncheckIcon,
+  GetAppRounded as GetAppIcon,
+  PhoneIphoneRounded as PhoneIcon,
+  CloseRounded as CloseIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
@@ -111,9 +114,33 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
   const signIn = useAuthStore((s) => s.signIn);
   const signUp = useAuthStore((s) => s.signUp);
   const isMobile = useMediaQuery('(max-width:768px)');
+
+  useEffect(() => {
+    if (!isMobile) return;
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, [isMobile]);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstall(false);
+      setDeferredPrompt(null);
+    }
+  };
 
   const pwChecks = getPasswordChecks(password);
   const pwStrength = getPasswordStrength(pwChecks);
@@ -429,7 +456,62 @@ export default function AuthPage() {
           <FintraxaLogo size={80} />
         </Box>
         {/* Form centered on page */}
-        {formCard}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, zIndex: 2, width: '100%', maxWidth: 368, px: 0 }}>
+          {formCard}
+          {/* PWA Install Prompt — mobile only */}
+          <AnimatePresence>
+            {showInstall && (
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 18 }}
+                transition={{ delay: 0.4, duration: 0.35 }}
+                style={{ width: '100%' }}
+              >
+                <Box sx={{
+                  display: 'flex', alignItems: 'center', gap: 1.5,
+                  p: 1.75, pl: 2,
+                  borderRadius: '14px',
+                  bgcolor: 'rgba(255,255,255,0.08)',
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                }}>
+                  <Box sx={{
+                    width: 38, height: 38, borderRadius: '10px', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                  }}>
+                    <PhoneIcon sx={{ fontSize: 20, color: '#fff' }} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>
+                      Get the App
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.35 }}>
+                      Install Fintraxa for a faster, native experience
+                    </Typography>
+                  </Box>
+                  <Button
+                    onClick={handleInstallClick}
+                    size="small"
+                    startIcon={<GetAppIcon sx={{ fontSize: '15px !important' }} />}
+                    sx={{
+                      borderRadius: '10px', px: 1.75, py: 0.7,
+                      fontSize: '0.7rem', fontWeight: 700, textTransform: 'none',
+                      bgcolor: '#fff', color: '#000', flexShrink: 0,
+                      minWidth: 'auto',
+                      '&:hover': { bgcolor: 'rgba(240,240,240,1)' },
+                    }}
+                  >
+                    Install
+                  </Button>
+                </Box>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Box>
       </Box>
     );
   }

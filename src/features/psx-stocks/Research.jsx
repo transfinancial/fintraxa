@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   Box, Typography, Card, CardContent, Chip, TextField, InputAdornment,
-  Collapse, IconButton, LinearProgress, Skeleton, useTheme, alpha,
+  Collapse, IconButton, LinearProgress, Skeleton, useTheme, useMediaQuery, alpha,
 } from '@mui/material';
 import {
   SearchRounded, ExpandMoreRounded, ExpandLessRounded,
@@ -26,6 +26,7 @@ const SECTION_TABS = [
 export default function Research() {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const isMobile = useMediaQuery('(max-width:768px)');
   const [activeTab, setActiveTab] = useState('overview');
   const [search, setSearch] = useState('');
   const [activeSector, setActiveSector] = useState(Object.keys(SECTORS)[0]);
@@ -69,12 +70,12 @@ export default function Research() {
   const chipSx = (active) => ({
     fontWeight: 600, fontSize: '0.72rem', height: 30,
     bgcolor: active
-      ? (isDark ? alpha(theme.palette.primary.main, 0.18) : alpha(theme.palette.primary.main, 0.1))
+      ? (isDark ? '#fff' : '#111')
       : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
-    color: active ? 'primary.main' : 'text.secondary',
+    color: active ? (isDark ? '#000' : '#fff') : 'text.secondary',
     border: active ? '1px solid' : '1px solid transparent',
-    borderColor: active ? 'primary.main' : 'transparent',
-    '&:hover': { bgcolor: isDark ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.primary.main, 0.06) },
+    borderColor: active ? (isDark ? '#fff' : '#111') : 'transparent',
+    '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
   });
 
   return (
@@ -163,7 +164,7 @@ function OverviewSection({ macro, livePriceMap, isDark, theme, cardSx }) {
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5, mb: 2 }}>
         {stats.map((s) => (
           <Card key={s.label} sx={{ ...cardSx }}>
-            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, textAlign: 'center' }}>
+            <CardContent sx={{ p: { xs: 1.2, sm: 1.5 }, '&:last-child': { pb: { xs: 1.2, sm: 1.5 } }, textAlign: 'center' }}>
               <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.3 }}>
                 {s.label}
               </Typography>
@@ -213,7 +214,7 @@ function OverviewSection({ macro, livePriceMap, isDark, theme, cardSx }) {
             { n: 'DuPont ROE', d: 'Margin × Turnover × Leverage quality' },
           ].map((m) => (
             <Box key={m.n} sx={{ display: 'flex', gap: 1, mb: 0.8, alignItems: 'baseline' }}>
-              <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, minWidth: 85, color: 'primary.main' }}>{m.n}</Typography>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, minWidth: 85, color: isDark ? '#fff' : '#111' }}>{m.n}</Typography>
               <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>{m.d}</Typography>
             </Box>
           ))}
@@ -323,7 +324,7 @@ function StockRow({ stock, livePrice: lp, liveChange: lc, expanded, onToggle, is
           </Box>
 
           {/* Metrics grid */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, mb: 1.2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 1, mb: 1.2 }}>
             {[
               { l: 'PE', v: stock.pe > 0 ? `${stock.pe}x` : '-' },
               { l: 'EPS', v: stock.eps > 0 ? formatNumber(stock.eps, 2) : '-' },
@@ -344,7 +345,7 @@ function StockRow({ stock, livePrice: lp, liveChange: lc, expanded, onToggle, is
 
           {/* Fair values */}
           {stock.fvPE > 0 && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, mb: 1.2,
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: 1, mb: 1.2,
               p: 1, borderRadius: 2, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
               {[
                 { l: 'Fair (PE)', v: formatNumber(stock.fvPE, 0) },
@@ -354,7 +355,7 @@ function StockRow({ stock, livePrice: lp, liveChange: lc, expanded, onToggle, is
               ].map((m) => (
                 <Box key={m.l} sx={{ textAlign: 'center' }}>
                   <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary' }}>{m.l}</Typography>
-                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: 'primary.main' }}>{m.v}</Typography>
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: isDark ? '#fff' : '#111' }}>{m.v}</Typography>
                 </Box>
               ))}
             </Box>
@@ -362,7 +363,7 @@ function StockRow({ stock, livePrice: lp, liveChange: lc, expanded, onToggle, is
 
           {/* Technical levels */}
           {(stock.support > 0 || stock.resistance > 0) && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, mb: 1.2 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: 1, mb: 1.2 }}>
               {[
                 { l: 'Support', v: stock.support > 0 ? formatNumber(stock.support, 0) : '-' },
                 { l: 'Resistance', v: stock.resistance > 0 ? formatNumber(stock.resistance, 0) : '-' },
@@ -434,7 +435,7 @@ function BucketSection({ activeBucket, setActiveBucket, livePrice, isDark, theme
       <Card sx={{ ...cardSx, mb: 1.5 }}>
         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
           <Typography sx={{ fontSize: '0.82rem', fontWeight: 700 }}>{bucket.name}</Typography>
-          <Typography sx={{ fontSize: '0.7rem', color: 'primary.main', fontWeight: 600, mb: 0.5 }}>{bucket.subtitle}</Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: isDark ? '#ccc' : '#333', fontWeight: 600, mb: 0.5 }}>{bucket.subtitle}</Typography>
           <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary', mb: 1, lineHeight: 1.5 }}>{bucket.description}</Typography>
 
           <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
@@ -519,14 +520,14 @@ function BuyZoneSection({ livePrice, liveChange, isDark, theme, cardSx }) {
                   )}
                 </Box>
               </Box>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, mb: 0.5 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 1, mb: 0.5 }}>
                 <Box>
                   <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary' }}>Buy Zone</Typography>
                   <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669' }}>{bz.buyZone}</Typography>
                 </Box>
                 <Box>
                   <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary' }}>Fair Value</Typography>
-                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: 'primary.main' }}>{bz.fair}</Typography>
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: isDark ? '#fff' : '#111' }}>{bz.fair}</Typography>
                 </Box>
                 <Box>
                   <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary' }}>Pattern</Typography>

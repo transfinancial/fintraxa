@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   Box, Typography, Card, CardContent, TextField, InputAdornment, Button,
-  Chip, Autocomplete, Slider, LinearProgress, Collapse, useTheme, alpha,
+  Chip, Autocomplete, Slider, LinearProgress, Collapse, useTheme, useMediaQuery, alpha,
 } from '@mui/material';
 import {
   CalculateRounded, SearchRounded, TrendingUpRounded,
@@ -83,6 +83,7 @@ function MetricPill({ label, value, color }) {
 export default function Tools() {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const isMobile = useMediaQuery('(max-width:768px)');
   const [activeTool, setActiveTool] = useState('analyzer');
 
   return (
@@ -98,8 +99,8 @@ export default function Tools() {
             <Box key={t.key} onClick={() => setActiveTool(t.key)} sx={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.4,
               py: 0.8, borderRadius: 2, cursor: 'pointer', transition: 'all 0.2s',
-              bgcolor: active ? (isDark ? alpha(theme.palette.primary.main, 0.15) : '#fff') : 'transparent',
-              color: active ? 'primary.main' : 'text.secondary',
+              bgcolor: active ? (isDark ? '#fff' : '#111') : 'transparent',
+              color: active ? (isDark ? '#000' : '#fff') : 'text.secondary',
               boxShadow: active ? (isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.08)') : 'none',
               '&:hover': { bgcolor: active ? undefined : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)') },
             }}>
@@ -164,7 +165,7 @@ function StockAnalyzer() {
       px: 2, py: 1.2, borderBottom: openSections[sectionKey] ? `1px solid ${theme.palette.divider}` : 'none',
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-        <Box sx={{ color: 'primary.main', display: 'flex' }}>{icon}</Box>
+        <Box sx={{ color: isDark ? '#fff' : '#111', display: 'flex' }}>{icon}</Box>
         <Typography sx={{ fontSize: '0.75rem', fontWeight: 700 }}>{title}</Typography>
       </Box>
       <ExpandMoreRounded sx={{
@@ -216,10 +217,10 @@ function StockAnalyzer() {
               : `linear-gradient(135deg, ${alpha(analysis.rating.color, 0.06)} 0%, transparent 60%)`,
           }}>
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
                 <ScoreGauge value={analysis.vs} color={analysis.rating.color} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.3, flexWrap: 'wrap' }}>
                     <StockLogo symbol={analysis.symbol} size="sm" />
                     <Typography sx={{ fontSize: '1.05rem', fontWeight: 800, letterSpacing: '-0.02em' }}>{analysis.symbol}</Typography>
                     <Chip label={analysis.vTag.label} size="small" sx={{ height: 18, fontSize: '0.55rem', fontWeight: 700, bgcolor: analysis.vTag.bg, color: analysis.vTag.color }} />
@@ -249,7 +250,7 @@ function StockAnalyzer() {
               </Box>
 
               {/* Quick metrics row */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.75, mt: 1.5 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: 0.75, mt: 1.5 }}>
                 <MetricPill label="PE" value={analysis.pe > 0 ? `${analysis.pe}x` : '—'} />
                 <MetricPill label="Div Yield" value={analysis.divYield > 0 ? `${analysis.divYield}%` : '—'} color={analysis.divYield > 6 ? '#16a34a' : undefined} />
                 <MetricPill label="ROE" value={`${analysis.roe}%`} color={analysis.roe > 25 ? '#16a34a' : undefined} />
@@ -311,8 +312,8 @@ function StockAnalyzer() {
           <Card sx={{ ...cardSx, mb: 1.5, overflow: 'hidden' }}>
             <SectionHeader title="Quality & Safety" sectionKey="quality" icon={<GppGoodRounded sx={{ fontSize: 16 }} />} />
             <Collapse in={openSections.quality}>
-              <CardContent sx={{ p: 2, pt: 1.5, '&:last-child': { pb: 2 } }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.75 }}>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, pt: 1.5, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 0.75 }}>
                   {[
                     { l: 'ROE', v: `${analysis.roe}%`, c: analysis.roe > 25 ? '#16a34a' : undefined },
                     { l: 'Net Margin', v: `${analysis.npm}%` },
@@ -373,7 +374,7 @@ function StockAnalyzer() {
                             <Box sx={{ position: 'absolute', left: `${resistPct}%`, top: 0, bottom: 0, width: 1, bgcolor: '#dc2626', opacity: 0.5 }} />
                             <Box sx={{
                               position: 'absolute', left: `${pricePct}%`, top: '50%', transform: 'translate(-50%, -50%)',
-                              width: 10, height: 10, borderRadius: '50%', bgcolor: 'primary.main', border: '2px solid', borderColor: isDark ? '#000' : '#fff',
+                              width: 10, height: 10, borderRadius: '50%', bgcolor: isDark ? '#fff' : '#111', border: '2px solid', borderColor: isDark ? '#000' : '#fff',
                               zIndex: 1,
                             }} />
                           </>
@@ -382,7 +383,7 @@ function StockAnalyzer() {
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.3 }}>
                       <Typography sx={{ fontSize: '0.55rem', color: '#16a34a' }}>S: {formatNumber(analysis.support, 0)}</Typography>
-                      <Typography sx={{ fontSize: '0.55rem', color: 'primary.main', fontWeight: 600 }}>Price: {formatNumber(analysis.price, 0)}</Typography>
+                      <Typography sx={{ fontSize: '0.55rem', color: isDark ? '#fff' : '#111', fontWeight: 600 }}>Price: {formatNumber(analysis.price, 0)}</Typography>
                       <Typography sx={{ fontSize: '0.55rem', color: '#dc2626' }}>R: {formatNumber(analysis.resistance, 0)}</Typography>
                     </Box>
                   </Box>
@@ -410,7 +411,7 @@ function StockAnalyzer() {
           {/* ─ Analyst Note ─ */}
           <Box sx={{
             p: 1.5, borderRadius: 3,
-            bgcolor: isDark ? 'rgba(255,255,255,0.02)' : alpha(theme.palette.primary.main, 0.03),
+            bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.025)',
             border: `1px solid ${theme.palette.divider}`,
             borderLeft: `3px solid ${analysis.rating.color}`,
           }}>
@@ -423,9 +424,9 @@ function StockAnalyzer() {
           <Box sx={{
             width: 64, height: 64, borderRadius: '50%', mx: 'auto', mb: 1.5,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            bgcolor: isDark ? alpha(theme.palette.primary.main, 0.08) : alpha(theme.palette.primary.main, 0.06),
+            bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
           }}>
-            <SpeedRounded sx={{ fontSize: 28, color: 'primary.main', opacity: 0.5 }} />
+            <SpeedRounded sx={{ fontSize: 28, color: isDark ? '#fff' : '#111', opacity: 0.5 }} />
           </Box>
           <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, mb: 0.3 }}>Stock Analyzer</Typography>
           <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary', maxWidth: 220, mx: 'auto', lineHeight: 1.5 }}>
@@ -515,20 +516,20 @@ function InvestCalculator() {
   return (
     <Box>
       {/* Strategy selector — card style */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.75, mb: 1.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 0.75, mb: 1.5 }}>
         {bucketKeys.map((k) => {
           const active = bucketKey === k;
           const b = BUCKETS[k];
           return (
             <Box key={k} onClick={() => { setBucketKey(k); setResults(null); }} sx={{
               px: 1, py: 0.9, borderRadius: 2, cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s',
-              border: `1.5px solid ${active ? theme.palette.primary.main : theme.palette.divider}`,
-              bgcolor: active ? (isDark ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.primary.main, 0.04)) : 'transparent',
-              '&:hover': { borderColor: active ? undefined : alpha(theme.palette.primary.main, 0.3) },
+              border: `1.5px solid ${active ? (isDark ? '#fff' : '#111') : theme.palette.divider}`,
+              bgcolor: active ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)') : 'transparent',
+              '&:hover': { borderColor: active ? undefined : (isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)') },
             }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.4, color: active ? 'primary.main' : 'text.secondary' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.4, color: active ? (isDark ? '#fff' : '#111') : 'text.secondary' }}>
                 {k === 'dividend' ? <SavingsRounded sx={{ fontSize: 14 }} /> : k === 'hybrid' ? <BalanceRounded sx={{ fontSize: 14 }} /> : <RocketLaunchRounded sx={{ fontSize: 14 }} />}
-                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: active ? 'primary.main' : 'text.primary' }}>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: active ? (isDark ? '#fff' : '#111') : 'text.primary' }}>
                   {b.name.split(' ')[0]}
                 </Typography>
               </Box>
@@ -547,7 +548,7 @@ function InvestCalculator() {
           <TextField
             fullWidth size="small" placeholder="1,000,000" value={amount}
             onChange={(e) => { const v = e.target.value.replace(/[^0-9]/g, ''); setAmount(v ? Number(v).toLocaleString() : ''); }}
-            InputProps={{ startAdornment: <InputAdornment position="start"><Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: 'primary.main' }}>PKR</Typography></InputAdornment> }}
+            InputProps={{ startAdornment: <InputAdornment position="start"><Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: isDark ? '#fff' : '#111' }}>PKR</Typography></InputAdornment> }}
             sx={{ mb: 1.5, '& .MuiOutlinedInput-root': { borderRadius: 2.5, fontSize: '0.9rem', fontWeight: 700, bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' } }}
           />
 
@@ -571,8 +572,8 @@ function InvestCalculator() {
               return (
                 <Box key={h} onClick={() => setHorizon(h)} sx={{
                   flex: 1, py: 0.7, borderRadius: 2, textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s',
-                  bgcolor: active ? 'primary.main' : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
-                  color: active ? '#fff' : 'text.secondary',
+                  bgcolor: active ? (isDark ? '#fff' : '#111') : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
+                  color: active ? (isDark ? '#000' : '#fff') : 'text.secondary',
                 }}>
                   <Typography sx={{ fontSize: '0.72rem', fontWeight: active ? 700 : 500 }}>{h}Y</Typography>
                 </Box>
@@ -583,7 +584,7 @@ function InvestCalculator() {
           <Button fullWidth variant="contained" onClick={calculate} disableElevation
             disabled={!amount || parseInt(String(amount).replace(/[^0-9]/g, '')) < 10000}
             startIcon={<CalculateRounded sx={{ fontSize: 16 }} />}
-            sx={{ borderRadius: 2.5, py: 0.9, fontWeight: 700, fontSize: '0.78rem', textTransform: 'none', letterSpacing: '-0.01em' }}>
+            sx={{ borderRadius: 2.5, py: 0.9, fontWeight: 700, fontSize: '0.78rem', textTransform: 'none', letterSpacing: '-0.01em', bgcolor: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff', '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)' }, '&.Mui-disabled': { bgcolor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)', color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' } }}>
             Calculate Portfolio
           </Button>
         </CardContent>
@@ -653,7 +654,7 @@ function InvestCalculator() {
                     borderBottom: `1px solid ${theme.palette.divider}`, '&:last-child': { borderBottom: 'none' },
                   }}>
                     <Box sx={{ width: 26, textAlign: 'center', flexShrink: 0 }}>
-                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: 'primary.main' }}>{a.pct.toFixed(0)}%</Typography>
+                      <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: isDark ? '#fff' : '#111' }}>{a.pct.toFixed(0)}%</Typography>
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -695,7 +696,7 @@ function InvestCalculator() {
                         <LinearProgress variant="determinate" value={barPct} sx={{
                           height: isLast ? 10 : 7, borderRadius: 5,
                           bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                          '& .MuiLinearProgress-bar': { borderRadius: 5, bgcolor: isLast ? '#16a34a' : 'primary.main' },
+                          '& .MuiLinearProgress-bar': { borderRadius: 5, bgcolor: isLast ? '#16a34a' : (isDark ? '#fff' : '#111') },
                         }} />
                       </Box>
                       <Box sx={{ minWidth: 72, textAlign: 'right' }}>
@@ -777,17 +778,17 @@ function Calculators() {
   return (
     <Box>
       {/* Calculator cards grid */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.75, mb: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: 0.75, mb: 2 }}>
         {calcs.map((c) => {
           const active = calc === c.key;
           return (
             <Box key={c.key} onClick={() => { setCalc(c.key); setResult(null); setInputs({}); }} sx={{
               py: 1, borderRadius: 2.5, textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s',
-              border: `1.5px solid ${active ? theme.palette.primary.main : theme.palette.divider}`,
-              bgcolor: active ? (isDark ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.primary.main, 0.04)) : 'transparent',
+              border: `1.5px solid ${active ? (isDark ? '#fff' : '#111') : theme.palette.divider}`,
+              bgcolor: active ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)') : 'transparent',
             }}>
-              <Box sx={{ display: 'flex', justifyContent: 'center', color: active ? 'primary.main' : 'text.secondary' }}>{c.icon}</Box>
-              <Typography sx={{ fontSize: '0.62rem', fontWeight: active ? 700 : 500, color: active ? 'primary.main' : 'text.secondary', mt: 0.3 }}>{c.label}</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'center', color: active ? (isDark ? '#fff' : '#111') : 'text.secondary' }}>{c.icon}</Box>
+              <Typography sx={{ fontSize: '0.62rem', fontWeight: active ? 700 : 500, color: active ? (isDark ? '#fff' : '#111') : 'text.secondary', mt: 0.3 }}>{c.label}</Typography>
             </Box>
           );
         })}
@@ -797,7 +798,7 @@ function Calculators() {
         {/* Formula header */}
         <Box sx={{
           px: 2, py: 1.2,
-          bgcolor: isDark ? alpha(theme.palette.primary.main, 0.06) : alpha(theme.palette.primary.main, 0.03),
+          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.025)',
           borderBottom: `1px solid ${theme.palette.divider}`,
         }}>
           <Typography sx={{ fontSize: '0.75rem', fontWeight: 700 }}>{activeCalc.label} Calculator</Typography>
@@ -818,7 +819,7 @@ function Calculators() {
 
           <Button fullWidth variant="contained" onClick={calculate} disableElevation
             startIcon={<CalculateRounded sx={{ fontSize: 16 }} />}
-            sx={{ borderRadius: 2.5, py: 0.9, fontWeight: 700, fontSize: '0.78rem', textTransform: 'none' }}>
+            sx={{ borderRadius: 2.5, py: 0.9, fontWeight: 700, fontSize: '0.78rem', textTransform: 'none', bgcolor: isDark ? '#fff' : '#111', color: isDark ? '#000' : '#fff', '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)' } }}>
             Calculate
           </Button>
 
@@ -829,12 +830,12 @@ function Calculators() {
                 <Box sx={{
                   mt: 2, p: 1.5, borderRadius: 3, textAlign: 'center',
                   bgcolor: result.ok
-                    ? (isDark ? alpha(theme.palette.primary.main, 0.06) : alpha(theme.palette.primary.main, 0.04))
+                    ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)')
                     : (isDark ? 'rgba(220,38,38,0.06)' : 'rgba(220,38,38,0.04)'),
-                  border: `1px solid ${result.ok ? alpha(theme.palette.primary.main, 0.15) : alpha('#dc2626', 0.15)}`,
+                  border: `1px solid ${result.ok ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)') : alpha('#dc2626', 0.15)}`,
                 }}>
                   <Typography sx={{ fontSize: '0.58rem', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.3 }}>{result.label}</Typography>
-                  <Typography sx={{ fontSize: '1.3rem', fontWeight: 800, color: result.ok ? (result.color || 'primary.main') : '#dc2626', letterSpacing: '-0.02em' }}>
+                  <Typography sx={{ fontSize: '1.3rem', fontWeight: 800, color: result.ok ? (result.color || (isDark ? '#fff' : '#111')) : '#dc2626', letterSpacing: '-0.02em' }}>
                     {result.value}
                   </Typography>
                   <Typography sx={{ fontSize: '0.62rem', color: 'text.secondary', mt: 0.3 }}>{result.desc}</Typography>
@@ -897,8 +898,8 @@ function Screener() {
             <Box key={o.k} onClick={() => setSortBy(o.k)} sx={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.3,
               py: 0.6, borderRadius: 1.5, cursor: 'pointer', transition: 'all 0.15s',
-              bgcolor: active ? (isDark ? alpha(theme.palette.primary.main, 0.15) : '#fff') : 'transparent',
-              color: active ? 'primary.main' : 'text.secondary',
+              bgcolor: active ? (isDark ? '#fff' : '#111') : 'transparent',
+              color: active ? (isDark ? '#000' : '#fff') : 'text.secondary',
               boxShadow: active ? (isDark ? 'none' : '0 1px 2px rgba(0,0,0,0.06)') : 'none',
             }}>
               {o.icon}
