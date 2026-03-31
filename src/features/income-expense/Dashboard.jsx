@@ -462,30 +462,50 @@ export default function IEDashboard() {
         </CardContent>
       </Card>
 
-      {/* ── Floating FAB (Mobile Only) ── */}
+      {/* ── Fixed Glassmorphism Add Button (Mobile Only) ── */}
       {isMobile && (
-        <Fab
-          onClick={() => navigate('/add-transaction')}
-          sx={{
-            position: 'fixed', bottom: 80, right: 20, width: 52, height: 52,
-            bgcolor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.88)',
-            color: isDark ? '#000' : '#fff',
-            backdropFilter: isDark ? 'blur(16px)' : 'none',
-            WebkitBackdropFilter: isDark ? 'blur(16px)' : 'none',
-            border: isDark ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(0,0,0,0.1)',
-            boxShadow: isDark
-              ? '0 4px 24px rgba(255,255,255,0.06)'
-              : '0 4px 20px rgba(0,0,0,0.18)',
-            '&:hover': {
-              bgcolor: isDark ? 'rgba(255,255,255,0.2)' : '#000',
-              transform: 'scale(1.05)',
-            },
-            transition: 'all 0.2s ease',
-            zIndex: 1000,
-          }}
-        >
-          <Add sx={{ fontSize: 24 }} />
-        </Fab>
+        <Box sx={{
+          position: 'fixed',
+          bottom: 68,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          width: 'calc(100% - 32px)',
+          maxWidth: 400,
+        }}>
+          <Fab
+            variant="extended"
+            onClick={() => navigate('/add-transaction')}
+            sx={{
+              width: '100%',
+              height: 48,
+              borderRadius: '14px',
+              bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.65)',
+              color: isDark ? '#fff' : '#111',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}`,
+              boxShadow: isDark
+                ? '0 8px 32px rgba(0,0,0,0.4), inset 0 0.5px 0 rgba(255,255,255,0.06)'
+                : '0 8px 32px rgba(0,0,0,0.08), inset 0 0.5px 0 rgba(255,255,255,0.8)',
+              textTransform: 'none',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
+              gap: 0.75,
+              '&:hover': {
+                bgcolor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.8)',
+              },
+              '&:active': {
+                transform: 'scale(0.98)',
+              },
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Add sx={{ fontSize: 20 }} />
+            Add Transaction
+          </Fab>
+        </Box>
       )}
     </Box>
   );

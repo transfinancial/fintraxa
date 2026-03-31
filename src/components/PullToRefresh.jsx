@@ -23,6 +23,7 @@ export default function PullToRefresh({ onRefresh, children }) {
   const [pullDistance, setPullDistance] = useState(0);
   const startY = useRef(0);
   const currentY = useRef(0);
+  const touchStartedAtTop = useRef(false);
   const containerRef = useRef(null);
   const spinnerControls = useAnimation();
 
@@ -40,13 +41,16 @@ export default function PullToRefresh({ onRefresh, children }) {
   }, []);
 
   const handleTouchStart = useCallback((e) => {
-    if (refreshing || !isAtTop()) return;
+    if (refreshing) return;
+    const atTop = isAtTop();
+    touchStartedAtTop.current = atTop;
+    if (!atTop) return;
     startY.current = e.touches[0].clientY;
     currentY.current = startY.current;
   }, [refreshing, isAtTop]);
 
   const handleTouchMove = useCallback((e) => {
-    if (refreshing) return;
+    if (refreshing || !touchStartedAtTop.current) return;
     currentY.current = e.touches[0].clientY;
     const delta = currentY.current - startY.current;
 

@@ -421,7 +421,7 @@ export default function PSXDashboard() {
           <MenuItem key={o.value} selected={holdingsSort === o.value}
             onClick={() => { setHoldingsSort(o.value); setSortAnchor(null); }}
             sx={{ fontSize: '0.72rem', py: 0.75, gap: 1 }}>
-            {holdingsSort === o.value && <CheckRounded sx={{ fontSize: 14, color: 'primary.main' }} />}
+            {holdingsSort === o.value && <CheckRounded sx={{ fontSize: 14, color: isDark ? '#fff' : '#111' }} />}
             <ListItemText primaryTypographyProps={{ fontSize: '0.72rem', fontWeight: holdingsSort === o.value ? 700 : 400 }}>{o.label}</ListItemText>
           </MenuItem>
         ))}

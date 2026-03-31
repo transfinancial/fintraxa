@@ -483,8 +483,8 @@ export default function PSXAnalytics() {
                 <Box key={sec.key} onClick={() => setActiveSection(sec.key)} sx={{
                   flex: 1, minWidth: 'fit-content', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.4,
                   py: 0.8, px: 0.5, borderRadius: 2, cursor: 'pointer', transition: 'all 0.2s',
-                  bgcolor: isActive ? (isDark ? alpha(theme.palette.primary.main, 0.15) : '#fff') : 'transparent',
-                  color: isActive ? 'primary.main' : 'text.secondary',
+                  bgcolor: isActive ? (isDark ? '#fff' : '#111') : 'transparent',
+                  color: isActive ? (isDark ? '#000' : '#fff') : 'text.secondary',
                   boxShadow: isActive ? (isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.08)') : 'none',
                   '&:hover': { bgcolor: isActive ? undefined : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)') },
                 }}>
@@ -526,7 +526,7 @@ export default function PSXAnalytics() {
                   <MenuItem key={s} selected={sectorFilter === s}
                     onClick={() => { setSectorFilter(s); setSectorMenuAnchor(null); }}
                     sx={{ fontSize: '0.72rem', py: 0.75, gap: 1 }}>
-                    {sectorFilter === s && <CheckRounded sx={{ fontSize: 14, color: 'primary.main' }} />}
+                    {sectorFilter === s && <CheckRounded sx={{ fontSize: 14, color: isDark ? '#fff' : '#111' }} />}
                     {s}
                   </MenuItem>
                 ))}
@@ -540,8 +540,8 @@ export default function PSXAnalytics() {
                 return (
                   <Box key={p.k} onClick={() => setPeriod(p.k)} sx={{
                     px: 1.2, py: 0.5, borderRadius: 2, cursor: 'pointer', transition: 'all 0.15s',
-                    bgcolor: isActive ? 'primary.main' : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
-                    color: isActive ? '#fff' : 'text.secondary',
+                    bgcolor: isActive ? (isDark ? '#fff' : '#111') : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'),
+                    color: isActive ? (isDark ? '#000' : '#fff') : 'text.secondary',
                   }}>
                     <Typography sx={{ fontSize: '0.65rem', fontWeight: isActive ? 700 : 500 }}>{p.l}</Typography>
                   </Box>

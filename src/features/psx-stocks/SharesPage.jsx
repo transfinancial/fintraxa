@@ -417,7 +417,7 @@ export default function SharesPage() {
           <MenuItem key={o.value} selected={sortBy === o.value}
             onClick={() => { setSortBy(o.value); setSortAnchor(null); }}
             sx={{ fontSize: '0.72rem', py: 0.75, gap: 1 }}>
-            {sortBy === o.value && <CheckRounded sx={{ fontSize: 14, color: 'primary.main' }} />}
+            {sortBy === o.value && <CheckRounded sx={{ fontSize: 14, color: isDark ? '#fff' : '#111' }} />}
             <ListItemText primaryTypographyProps={{ fontSize: '0.72rem', fontWeight: sortBy === o.value ? 700 : 400 }}>{o.label}</ListItemText>
           </MenuItem>
         ))}
@@ -434,7 +434,7 @@ export default function SharesPage() {
           <MenuItem key={s} selected={sectorFilter === s}
             onClick={() => { setSectorFilter(s); setSectorAnchor(null); }}
             sx={{ fontSize: '0.72rem', py: 0.75, gap: 1 }}>
-            {sectorFilter === s && <CheckRounded sx={{ fontSize: 14, color: 'primary.main' }} />}
+            {sectorFilter === s && <CheckRounded sx={{ fontSize: 14, color: isDark ? '#fff' : '#111' }} />}
             <ListItemText primaryTypographyProps={{ fontSize: '0.72rem', fontWeight: sectorFilter === s ? 700 : 400 }}>{s}</ListItemText>
           </MenuItem>
         ))}
@@ -538,7 +538,7 @@ export default function SharesPage() {
         })}
         {visibleCount < displayStocks.length && (
           <Button fullWidth onClick={() => setVisibleCount((c) => c + 50)}
-            sx={{ mt: 1, mb: 1, borderRadius: 2.5, py: 1, fontWeight: 600, fontSize: '0.78rem', textTransform: 'none', color: 'primary.main' }}>
+            sx={{ mt: 1, mb: 1, borderRadius: 2.5, py: 1, fontWeight: 600, fontSize: '0.78rem', textTransform: 'none', color: isDark ? '#fff' : '#111' }}>
             Load more ({displayStocks.length - visibleCount} remaining)
           </Button>
         )}
@@ -716,7 +716,7 @@ export default function SharesPage() {
                       InputProps={{ startAdornment: <InputAdornment position="start" sx={{ '& .MuiTypography-root': { fontSize: '0.6rem' } }}>Rs</InputAdornment> }} />
                     {feeEdited && (
                       <Typography onClick={() => { setFeeEdited(false); setTradeFee(''); }}
-                        sx={{ fontSize: '0.5rem', color: 'primary.main', cursor: 'pointer', textDecoration: 'underline', flexShrink: 0 }}>reset</Typography>
+                        sx={{ fontSize: '0.5rem', color: isDark ? '#fff' : '#111', cursor: 'pointer', textDecoration: 'underline', flexShrink: 0 }}>reset</Typography>
                     )}
                   </Box>
                 </Box>

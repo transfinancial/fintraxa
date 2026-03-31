@@ -16,6 +16,7 @@ import {
   RadioButtonUncheckedRounded as UncheckIcon,
   GetAppRounded as GetAppIcon,
   PhoneIphoneRounded as PhoneIcon,
+  IosShareRounded as ShareIcon,
   CloseRounded as CloseIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -115,30 +116,33 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showInstall, setShowInstall] = useState(false);
+  const [installDismissed, setInstallDismissed] = useState(false);
   const signIn = useAuthStore((s) => s.signIn);
   const signUp = useAuthStore((s) => s.signUp);
   const isMobile = useMediaQuery('(max-width:768px)');
 
+  const isStandalone = typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches;
+  const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const showInstall = isMobile && !isStandalone && !installDismissed;
+
   useEffect(() => {
     if (!isMobile) return;
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowInstall(true);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, [isMobile]);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setShowInstall(false);
-      setDeferredPrompt(null);
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setInstallDismissed(true);
+        setDeferredPrompt(null);
+      }
     }
   };
 
@@ -476,7 +480,15 @@ export default function AuthPage() {
                   backdropFilter: 'blur(16px)',
                   WebkitBackdropFilter: 'blur(16px)',
                   border: '1px solid rgba(255,255,255,0.15)',
+                  position: 'relative',
                 }}>
+                  <IconButton
+                    onClick={() => setInstallDismissed(true)}
+                    size="small"
+                    sx={{ position: 'absolute', top: 6, right: 6, color: 'rgba(255,255,255,0.4)', p: '3px' }}
+                  >
+                    <CloseIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
                   <Box sx={{
                     width: 38, height: 38, borderRadius: '10px', flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -485,28 +497,40 @@ export default function AuthPage() {
                   }}>
                     <PhoneIcon sx={{ fontSize: 20, color: '#fff' }} />
                   </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box sx={{ flex: 1, minWidth: 0, pr: 1 }}>
                     <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>
-                      Get the App
+                      Install as App
                     </Typography>
-                    <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.35 }}>
-                      Install Fintraxa for a faster, native experience
-                    </Typography>
+                    {isIOS ? (
+                      <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, mt: 0.25 }}>
+                        Tap <ShareIcon sx={{ fontSize: 12, verticalAlign: 'middle', mx: 0.25 }} /> then <strong>&quot;Add to Home Screen&quot;</strong>
+                      </Typography>
+                    ) : deferredPrompt ? (
+                      <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.35 }}>
+                        Get the full native experience
+                      </Typography>
+                    ) : (
+                      <Typography sx={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.35 }}>
+                        Use browser menu &gt; &quot;Install app&quot; or &quot;Add to Home Screen&quot;
+                      </Typography>
+                    )}
                   </Box>
-                  <Button
-                    onClick={handleInstallClick}
-                    size="small"
-                    startIcon={<GetAppIcon sx={{ fontSize: '15px !important' }} />}
-                    sx={{
-                      borderRadius: '10px', px: 1.75, py: 0.7,
-                      fontSize: '0.7rem', fontWeight: 700, textTransform: 'none',
-                      bgcolor: '#fff', color: '#000', flexShrink: 0,
-                      minWidth: 'auto',
-                      '&:hover': { bgcolor: 'rgba(240,240,240,1)' },
-                    }}
-                  >
-                    Install
-                  </Button>
+                  {!isIOS && deferredPrompt && (
+                    <Button
+                      onClick={handleInstallClick}
+                      size="small"
+                      startIcon={<GetAppIcon sx={{ fontSize: '15px !important' }} />}
+                      sx={{
+                        borderRadius: '10px', px: 1.75, py: 0.7,
+                        fontSize: '0.7rem', fontWeight: 700, textTransform: 'none',
+                        bgcolor: '#fff', color: '#000', flexShrink: 0,
+                        minWidth: 'auto',
+                        '&:hover': { bgcolor: 'rgba(240,240,240,1)' },
+                      }}
+                    >
+                      Install
+                    </Button>
+                  )}
                 </Box>
               </motion.div>
             )}
