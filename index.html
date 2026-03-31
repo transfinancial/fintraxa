@@ -30,7 +30,64 @@
     <title>Fintraxa</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Initial loader — theme-aware via localStorage, removed by React on mount -->
+      <div id="initial-loader">
+        <style>
+          @keyframes infinityDash {
+            0%   { stroke-dashoffset: 685; }
+            100% { stroke-dashoffset: -685; }
+          }
+          #initial-loader {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100dvh;
+            gap: 18px;
+            background: #fff;
+            transition: none;
+          }
+          #initial-loader.dark {
+            background: #000;
+          }
+          #initial-loader .spinner-svg path {
+            stroke: #000;
+            animation: infinityDash 2s linear infinite;
+          }
+          #initial-loader.dark .spinner-svg path {
+            stroke: #fff;
+          }
+          #initial-loader .brand {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(0,0,0,0.25);
+            margin-top: 2px;
+          }
+          #initial-loader.dark .brand {
+            color: rgba(255,255,255,0.2);
+          }
+        </style>
+        <svg class="spinner-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150" width="96" height="48">
+          <path fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"
+            stroke-dasharray="300 385" stroke-dashoffset="0"
+            d="M275 75c0 31-27 50-50 50-58 0-92-100-150-100-28 0-50 22-50 50s23 50 50 50c58 0 92-100 150-100 24 0 50 19 50 50Z"/>
+        </svg>
+        <div class="brand">Fintraxa</div>
+        <script>
+          // Sync initial loader theme with stored preference (avoids flash)
+          (function() {
+            var stored = null;
+            try { stored = localStorage.getItem('pt-theme'); } catch(e) {}
+            var isDark = stored === 'dark' || (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.getElementById('initial-loader').classList.add('dark');
+          })();
+        </script>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

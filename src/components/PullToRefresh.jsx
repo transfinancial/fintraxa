@@ -5,13 +5,12 @@ import { motion, useAnimation } from 'framer-motion';
 const THRESHOLD = 80;
 const MAX_PULL = 120;
 const SPINNER_SIZE = 32;
+const DEAD_ZONE = 15; // px of downward movement before pull engages
 
 /**
  * PullToRefresh — wraps children with a pull-down-to-reload gesture (mobile only).
- * Disables Chrome's native overscroll-refresh.
- *
- * @param {() => Promise<void>} onRefresh  — async callback invoked on release past threshold
- * @param {React.ReactNode} children
+ * Only activates when the page is scrolled to the very top and the user
+ * deliberately pulls downward past a dead-zone.
  */
 export default function PullToRefresh({ onRefresh, children }) {
   const theme = useTheme();
@@ -21,53 +20,89 @@ export default function PullToRefresh({ onRefresh, children }) {
   const [pulling, setPulling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
+
   const startY = useRef(0);
-  const currentY = useRef(0);
-  const touchStartedAtTop = useRef(false);
   const containerRef = useRef(null);
   const spinnerControls = useAnimation();
 
-  // Determine if at scroll top (allows pull)
+  // Whether this touch gesture is eligible for pull-to-refresh
+  const eligible = useRef(false);
+  // Whether pull has been activated (past dead-zone)
+  const activated = useRef(false);
+
+  /** Check every scrollable ancestor + window are at scroll-top === 0 */
   const isAtTop = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return true;
-    // Walk up to find scrollable ancestor
-    let node = el;
-    while (node && node !== document.body) {
+    if (window.scrollY > 0 || document.documentElement.scrollTop > 0) return false;
+    let node = containerRef.current;
+    while (node && node !== document.documentElement) {
       if (node.scrollTop > 0) return false;
-      node = node.parentNode;
+      node = node.parentElement;
     }
-    return window.scrollY <= 0;
+    return true;
   }, []);
 
   const handleTouchStart = useCallback((e) => {
     if (refreshing) return;
-    const atTop = isAtTop();
-    touchStartedAtTop.current = atTop;
-    if (!atTop) return;
-    startY.current = e.touches[0].clientY;
-    currentY.current = startY.current;
+    activated.current = false;
+    // Only mark eligible if we are truly at top right now
+    if (isAtTop()) {
+      eligible.current = true;
+      startY.current = e.touches[0].clientY;
+    } else {
+      eligible.current = false;
+    }
   }, [refreshing, isAtTop]);
 
   const handleTouchMove = useCallback((e) => {
-    if (refreshing || !touchStartedAtTop.current) return;
-    currentY.current = e.touches[0].clientY;
-    const delta = currentY.current - startY.current;
+    if (refreshing || !eligible.current) return;
 
-    if (delta > 10 && isAtTop()) {
-      // Apply resistance curve
-      const dist = Math.min(delta * 0.45, MAX_PULL);
+    const touchY = e.touches[0].clientY;
+    const delta = touchY - startY.current;
+
+    // If user scrolled up (negative delta), they're scrolling content — cancel eligibility
+    if (delta < -5) {
+      eligible.current = false;
+      if (pulling) {
+        setPulling(false);
+        setPullDistance(0);
+      }
+      return;
+    }
+
+    // Re-check we're still at top (user might have scrolled content sideways or momentum scroll)
+    if (!isAtTop()) {
+      eligible.current = false;
+      if (pulling) {
+        setPulling(false);
+        setPullDistance(0);
+      }
+      return;
+    }
+
+    // Dead-zone: only activate pull after user has moved finger down enough
+    if (!activated.current) {
+      if (delta >= DEAD_ZONE) {
+        activated.current = true;
+        // Reset start position to current so the visible pull starts from 0
+        startY.current = touchY;
+      }
+      return;
+    }
+
+    // Now we're pulling
+    const pullDelta = touchY - startY.current;
+    const dist = Math.min(pullDelta * 0.45, MAX_PULL);
+    if (dist > 0) {
       setPullDistance(dist);
       setPulling(true);
-      // Prevent native scroll when pulling
-      if (dist > 5) e.preventDefault();
-    } else if (pulling && delta <= 0) {
-      setPullDistance(0);
-      setPulling(false);
+      e.preventDefault(); // prevent native scroll/overscroll
     }
   }, [refreshing, pulling, isAtTop]);
 
   const handleTouchEnd = useCallback(async () => {
+    eligible.current = false;
+    activated.current = false;
+
     if (!pulling) return;
 
     if (pullDistance >= THRESHOLD && onRefresh) {
@@ -79,7 +114,7 @@ export default function PullToRefresh({ onRefresh, children }) {
       });
       try {
         await onRefresh();
-      } catch (e) { /* silent */ }
+      } catch (_) { /* silent */ }
       spinnerControls.stop();
       setRefreshing(false);
     }
@@ -88,7 +123,7 @@ export default function PullToRefresh({ onRefresh, children }) {
     setPullDistance(0);
   }, [pulling, pullDistance, onRefresh, spinnerControls]);
 
-  // Attach non-passive touchmove listener for preventDefault
+  // Attach non-passive touchmove so we can preventDefault
   useEffect(() => {
     const el = containerRef.current;
     if (!el || !isMobile) return;

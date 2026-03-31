@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
-import { Box, CircularProgress, useMediaQuery } from '@mui/material';
+import { useMediaQuery } from '@mui/material';
 import SwipeablePages from '../../components/SwipeablePages';
+import InfiniteSpinner from '../../components/InfiniteSpinner';
 
 const Dashboard = lazy(() => import('./Dashboard'));
 const SharesPage = lazy(() => import('./SharesPage'));
@@ -9,11 +10,7 @@ const Analytics = lazy(() => import('./Analytics'));
 const Research = lazy(() => import('./Research'));
 const Tools = lazy(() => import('./Tools'));
 
-const Loader = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
-    <CircularProgress size={22} sx={{ color: 'text.secondary' }} />
-  </Box>
-);
+const Loader = () => <InfiniteSpinner size={64} minHeight="40vh" />;
 
 export default function PSXSection() {
   const isMobile = useMediaQuery('(max-width:768px)');

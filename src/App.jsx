@@ -1,13 +1,14 @@
 import { useEffect, useMemo, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { Snackbar, Alert, Dialog, DialogContent, DialogActions, Button, Typography, CircularProgress, Box } from '@mui/material';
+import { Snackbar, Alert, Dialog, DialogContent, DialogActions, Button, Typography, Box } from '@mui/material';
 import { useAuthStore } from './store/authStore';
 import { useAppStore } from './store/appStore';
 import { buildTheme } from './theme';
 import AppLayout from './components/layout/AppLayout';
 import AuthPage from './features/auth/AuthPage';
 import InstallPrompt from './components/InstallPrompt';
+import InfiniteSpinner from './components/InfiniteSpinner';
 
 // Lazy load feature modules
 const IEDashboard = lazy(() => import('./features/income-expense/Dashboard'));
@@ -24,16 +25,13 @@ const StockAnalytics = lazy(() => import('./features/psx-stocks/Analytics'));
 const StockResearch = lazy(() => import('./features/psx-stocks/Research'));
 const StockTools = lazy(() => import('./features/psx-stocks/Tools'));
 
-const Loader = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-    <CircularProgress />
-  </Box>
-);
+const Loader = () => <InfiniteSpinner size={80} minHeight="50vh" />;
+const FullLoader = () => <InfiniteSpinner size={96} minHeight="100dvh" showBrand />;
 
 function ProtectedRoute({ children }) {
   const user = useAuthStore((s) => s.user);
   const loading = useAuthStore((s) => s.loading);
-  if (loading) return <Loader />;
+  if (loading) return <FullLoader />;
   if (!user) return <Navigate to="/auth" replace />;
   return children;
 }
@@ -52,7 +50,13 @@ export default function App() {
 
   useEffect(() => { initialize(); }, [initialize]);
 
-  if (loading) return <Loader />;
+  // Remove the HTML initial-loader once React takes over
+  useEffect(() => {
+    const el = document.getElementById('initial-loader');
+    if (el) el.remove();
+  }, []);
+
+  if (loading) return <FullLoader />;
 
   return (
     <ThemeProvider theme={theme}>

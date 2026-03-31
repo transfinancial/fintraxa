@@ -1,16 +1,13 @@
 import { Suspense, lazy } from 'react';
-import { Box, CircularProgress, useMediaQuery } from '@mui/material';
+import { useMediaQuery } from '@mui/material';
 import SwipeablePages from '../../components/SwipeablePages';
+import InfiniteSpinner from '../../components/InfiniteSpinner';
 
 const Dashboard = lazy(() => import('./Dashboard'));
 const AddFund = lazy(() => import('./AddFund'));
 const Analytics = lazy(() => import('./Analytics'));
 
-const Loader = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
-    <CircularProgress size={22} sx={{ color: 'text.secondary' }} />
-  </Box>
-);
+const Loader = () => <InfiniteSpinner size={64} minHeight="40vh" />;
 
 export default function MFSection() {
   const isMobile = useMediaQuery('(max-width:768px)');
